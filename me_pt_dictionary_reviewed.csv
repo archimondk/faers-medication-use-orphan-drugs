@@ -1,0 +1,217 @@
+﻿pt,n_reports_all_faers,keep,category,note
+Off label use,797973,Y,off_label,Analysed separately; not in composite
+Product dose omission issue,251362,Y,nonadherence,
+Wrong technique in product usage process,193349,Y,dosing_admin_error,
+Incorrect dose administered,190854,Y,dosing_admin_error,
+Drug dose omission,141407,Y,nonadherence,
+Product storage error,81075,Y,storage_handling,
+Drug dose omission by device,71124,N,device,Device-related; not applicable to oral drugs
+Underdose,67327,Y,dosing_admin_error,
+Product dose omission,66197,Y,nonadherence,
+Therapy interrupted,62022,Y,interruption_ambiguous,May reflect clinician-directed discontinuation after an adverse event; analysed separately
+Therapy cessation,47804,Y,interruption_ambiguous,May reflect clinician-directed discontinuation after an adverse event; analysed separately
+Wrong technique in device usage process,42903,N,device,Device-related; not applicable to oral drugs
+Treatment noncompliance,42278,Y,nonadherence,
+Extra dose administered,36808,Y,dosing_admin_error,
+Medication error,33565,Y,dosing_admin_error,
+Expired product administered,31792,Y,storage_handling,
+Circumstance or information capable of leading to medication error,30231,Y,dosing_admin_error,Potential error that did not occur
+Accidental overdose,28403,Y,dosing_admin_error,
+Intentional dose omission,24340,Y,nonadherence,
+Product dose omission in error,23595,Y,nonadherence,
+Incorrect dose administered by device,23045,N,device,Device-related; not applicable to oral drugs
+Drug administration error,22413,Y,dosing_admin_error,
+Incorrect route of drug administration,22359,Y,dosing_admin_error,
+Product prescribing error,22094,Y,dosing_admin_error,
+Incorrect drug administration duration,20854,Y,dosing_admin_error,
+Product availability issue,20801,Y,access_supply,
+Product dispensing error,20321,Y,dosing_admin_error,
+Product preparation error,19910,Y,dosing_admin_error,
+Incorrect product administration duration,19336,Y,dosing_admin_error,
+Wrong technique in drug usage process,19175,Y,dosing_admin_error,
+Prescribed underdose,18913,Y,dosing_admin_error,
+Product administration error,18576,Y,dosing_admin_error,
+Incorrect route of product administration,15571,Y,dosing_admin_error,
+Drug prescribing error,15288,Y,dosing_admin_error,
+Body temperature increased,14512,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Accidental underdose,14007,Y,dosing_admin_error,
+Incorrect product storage,12902,Y,storage_handling,
+Insurance issue,12868,Y,access_supply,
+Intercepted product preparation error,11620,Y,dosing_admin_error,Intercepted error that did not reach the patient
+Drug dispensing error,10609,Y,dosing_admin_error,
+Inability to afford medication,9118,Y,access_supply,
+Labelled drug-drug interaction medication error,8632,Y,dosing_admin_error,Labelled drug-interaction medication error
+Temperature intolerance,8375,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Menstruation delayed,8045,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Body temperature decreased,7858,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Intercepted product administration error,7570,Y,dosing_admin_error,Intercepted error that did not reach the patient
+Product administration interrupted,7203,Y,interruption_ambiguous,May reflect clinician-directed discontinuation after an adverse event; analysed separately
+Intentional underdose,6864,Y,nonadherence,
+Product supply issue,6594,Y,access_supply,
+Wrong product administered,6205,Y,dosing_admin_error,
+Wrong drug administered,5294,Y,dosing_admin_error,
+Incorrect dosage administered,4698,Y,dosing_admin_error,
+Feeling of body temperature change,4682,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Intercepted medication error,4350,Y,dosing_admin_error,Intercepted error that did not reach the patient
+Product temperature excursion issue,4250,Y,storage_handling,
+Therapeutic product effect delayed,4230,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Drug effect delayed,4150,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Incorrect drug administration rate,3498,Y,dosing_admin_error,
+Expired device used,3105,N,device,Device-related; not applicable to oral drugs
+Intercepted product storage error,3092,Y,storage_handling,
+Incorrect disposal of product,2979,N,-,Does not involve patient medication use
+Wrong patient received medication,2733,Y,dosing_admin_error,
+Wrong patient received product,2626,Y,dosing_admin_error,
+Product dispensing issue,2529,Y,dosing_admin_error,
+Drug titration error,2400,Y,dosing_admin_error,
+Wrong dose,2337,Y,dosing_admin_error,
+Therapeutic response delayed,2101,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Expired drug administered,1994,Y,storage_handling,
+Temperature regulation disorder,1832,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Body temperature abnormal,1739,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Body temperature fluctuation,1734,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Transcription medication error,1510,Y,dosing_admin_error,
+Product monitoring error,1386,Y,dosing_admin_error,
+Treatment delayed,1335,Y,interruption_ambiguous,May reflect clinician-directed discontinuation after an adverse event; analysed separately
+Intercepted product dispensing error,1333,Y,dosing_admin_error,Intercepted error that did not reach the patient
+Incorrect dose administered by product,1329,Y,dosing_admin_error,
+Off label use of device,1173,N,device,Device-related; not applicable to oral drugs
+Costochondritis,1160,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Intercepted product prescribing error,1120,Y,dosing_admin_error,Intercepted error that did not reach the patient
+Device dispensing error,1100,N,device,Device-related; not applicable to oral drugs
+Intercepted drug dispensing error,927,Y,dosing_admin_error,Intercepted error that did not reach the patient
+Wrong schedule,917,Y,dosing_admin_error,
+Drug administered in wrong device,911,N,device,Device-related; not applicable to oral drugs
+Drug dispensed to wrong patient,895,Y,dosing_admin_error,
+Incorrect product formulation administered,777,Y,dosing_admin_error,
+Abortion missed,748,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed graft function,673,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Drug monitoring procedure incorrectly performed,630,Y,dosing_admin_error,
+Wrong device used,615,N,device,Device-related; not applicable to oral drugs
+Delayed recovery from anaesthesia,608,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Fracture delayed union,585,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Labelled drug-disease interaction medication error,559,Y,dosing_admin_error,Labelled drug-interaction medication error
+Incorrect storage of drug,527,Y,storage_handling,
+Intercepted drug prescribing error,469,Y,dosing_admin_error,Intercepted error that did not reach the patient
+Wrong patient,434,Y,dosing_admin_error,
+Labelled drug-food interaction medication error,432,Y,dosing_admin_error,Labelled drug-interaction medication error
+Ejaculation delayed,425,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Incorrect drug dosage form administered,384,Y,dosing_admin_error,
+Intercepted drug administration error,361,Y,dosing_admin_error,Intercepted error that did not reach the patient
+Diet noncompliance,348,Y,diet_noncompliance,Dietary noncompliance in metabolic disease; analysed separately
+Product label on wrong product,346,Y,dosing_admin_error,
+Wrong drug,346,Y,dosing_admin_error,
+Product administered by wrong person,337,Y,dosing_admin_error,
+Incorrect product dosage form administered,335,Y,dosing_admin_error,
+Wrong strength,312,Y,dosing_admin_error,
+Wrong product stored,275,Y,storage_handling,
+Medical device monitoring error,269,N,device,Device-related; not applicable to oral drugs
+Medication monitoring error,217,Y,dosing_admin_error,
+Delayed puberty,199,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Body temperature,177,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Exposure to extreme temperature,158,N,-,"Usually patient exposure to extreme temperature, not product storage"
+Intercostal neuralgia,139,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Costovertebral angle tenderness,114,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed delivery,112,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Wrong dosage formulation,112,Y,dosing_admin_error,
+Investigation noncompliance,95,N,-,Not medication use
+Therapeutic drug monitoring analysis incorrectly performed,95,Y,dosing_admin_error,
+Delayed engraftment,82,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Manufacturing product storage issue,82,N,-,Manufacturing-related
+Wrong rate,81,Y,dosing_admin_error,
+Unable to afford prescribed medication,71,Y,access_supply,
+Delayed dark adaptation,70,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Device temperature issue,66,N,device,Device-related; not applicable to oral drugs
+Temperature difference of extremities,66,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Deprescribing error,62,Y,dosing_admin_error,
+Delayed sleep phase,61,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Glycogen storage disease type II,59,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed haemolytic transfusion reaction,56,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Wrong dosage form,56,Y,dosing_admin_error,
+Intercepted wrong patient selected,54,Y,dosing_admin_error,Intercepted error that did not reach the patient
+Wrong device dispensed,54,N,device,Device-related; not applicable to oral drugs
+Skin temperature increased,51,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Thoracostomy,51,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Wrong product procured,50,Y,dosing_admin_error,
+Myalgia intercostal,47,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed fontanelle closure,45,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Epiphyses delayed fusion,45,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Costal cartilage fracture,33,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Interruption of aortic arch,31,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Callus formation delayed,28,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Wrong route,25,Y,dosing_admin_error,
+Glycogen storage disorder,24,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Glycogen storage disease type V,23,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed ischaemic neurological deficit,19,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed light adaptation,19,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed myelination,19,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Drug dispensing issue,19,Y,dosing_admin_error,
+Menopause delayed,19,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Ovulation delayed,19,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Skin temperature,19,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Temperature perception test abnormal,18,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed visual maturation,16,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Medication error in transfer of care,16,Y,dosing_admin_error,
+Lysosomal storage disorder,15,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed effects of radiation,14,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed menarche,14,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Pituitary stalk interruption syndrome,12,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Liver palpable subcostal,11,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Smoking cessation therapy,11,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Blood corticosterone decreased,9,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Blood corticosterone increased,9,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Costochondral separation,9,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed haematopoietic reconstitution,7,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Glycogen storage disease type VIII,7,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+OFF LABEL USE,7,Y,off_label,Analysed separately; not in composite
+Skin temperature decreased,7,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed closure of cranial sutures,6,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Missed labour,6,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Corticosteroid binding globulin increased,5,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed serologic transfusion reaction,5,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Glycogen storage disease type I,5,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Hydroxycorticosteroids increased,5,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Intercepted product monitoring error,5,Y,dosing_admin_error,Intercepted error that did not reach the patient
+MEDICATION ERROR,5,Y,dosing_admin_error,
+WRONG TECHNIQUE IN DRUG USAGE PROCESS,5,Y,dosing_admin_error,
+Booster dose missed,4,N,-,Vaccine-specific
+Caecostomy,4,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed foetal renal development,4,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed passage of meconium,4,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Device effect delayed,4,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Glycogen storage disease type IV,4,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+INCORRECT DOSE ADMINISTERED,4,Y,dosing_admin_error,
+Occupational exposure to extreme temperature,4,N,-,Occupational exposure
+UNDERDOSE,4,Y,dosing_admin_error,
+Wrong device,4,N,device,Device-related; not applicable to oral drugs
+11-deoxycorticosterone increased,3,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+BODY TEMPERATURE INCREASED,3,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Body temperature normal,3,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+DRUG ADMINISTRATION ERROR,3,Y,dosing_admin_error,
+DRUG DOSE OMISSION,3,Y,nonadherence,
+Delayed follicular ripening,3,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed platelet engraftment,3,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Drug administration monitoring procedure incorrectly performed,3,Y,dosing_admin_error,
+Platelet storage pool deficiency,3,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Radiation underdose,3,N,-,Radiotherapy-related
+ACCIDENTAL OVERDOSE,2,Y,dosing_admin_error,
+Blood corticosterone abnormal,2,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Costello syndrome,2,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Glycogen storage disease type VI,2,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Glycogen storage disease type VII,2,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Labelled drug-genetic interaction medication error,2,Y,dosing_admin_error,Labelled drug-interaction medication error
+TEMPERATURE INTOLERANCE,2,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+TREATMENT NONCOMPLIANCE,2,Y,nonadherence,
+Corticosteroid binding globulin decreased,1,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+DELAYED HAEMOLYTIC TRANSFUSION REACTION,1,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Delayed umbilical cord clamping,1,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Dietary supplement prescribing error,1,Y,dosing_admin_error,
+INCORRECT DRUG ADMINISTRATION DURATION,1,Y,dosing_admin_error,
+INCORRECT PRODUCT STORAGE,1,Y,storage_handling,
+Labelled drug-alcohol interaction medication error,1,Y,dosing_admin_error,Labelled drug-interaction medication error
+MENSTRUATION DELAYED,1,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Manufacturing process control procedure incorrectly performed,1,N,-,Manufacturing-related
+Spondylocostal dysostosis,1,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+Temperature perception test decreased,1,N,-,"Keyword false match (e.g. body temperature, glycogen storage disease, costochondritis, corticosterone, 'delayed' terms)"
+WRONG DRUG ADMINISTERED,1,Y,dosing_admin_error,
+Wrong device selected,1,N,device,Device-related; not applicable to oral drugs

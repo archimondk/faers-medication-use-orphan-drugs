@@ -1,0 +1,45 @@
+# Analysis outputs
+out/
+results/
+figures/
+**/_work/
+*.npz
+*.npy
+
+# Source data — never commit
+faers_zips/
+**/faers_zips/
+*.zip
+**/[Dd][Ee][Mm][Oo]*.[Tt][Xx][Tt]
+**/[Dd][Rr][Uu][Gg]*.[Tt][Xx][Tt]
+**/[Rr][Ee][Aa][Cc]*.[Tt][Xx][Tt]
+**/[Ii][Nn][Dd][Ii]*.[Tt][Xx][Tt]
+**/[Dd][Ee][Ll][Ee]*.[Tt][Xx][Tt]
+**/*[Dd]eleted[Cc]ases*.[Tt][Xx][Tt]
+**/[Oo][Uu][Tt][Cc]*.[Tt][Xx][Tt]
+**/[Rr][Pp][Ss][Rr]*.[Tt][Xx][Tt]
+**/[Tt][Hh][Ee][Rr]*.[Tt][Xx][Tt]
+
+# MedDRA-derived term lists — licensed content, never commit
+smq/
+**/smq_*.txt
+**/smq_20000224_*
+
+# Manuscript material, coding tables and literature PDFs live outside this repository
+*.pdf
+*.docx
+*.xlsx
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+~$*
+.idea/
+.vscode/
