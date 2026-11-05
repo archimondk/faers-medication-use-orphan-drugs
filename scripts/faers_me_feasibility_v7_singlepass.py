@@ -127,13 +127,15 @@ INDICATIONS = {
     "carglumic_acid": r"hyperammon|glutamate synthase|propionic|methylmalonic|urea cycle",
     "sapropterin": r"phenylketonuria|hyperphenylalanin|tetrahydrobiopterin|biopterin",
     "sepiapterin": r"phenylketonuria|hyperphenylalanin",
-    "tiopronin": r"cystinuria|cystine",
-    "miglustat": r"gaucher|niemann|glycogen storage disease type ii|pompe",
+    "tiopronin": r"(?<!homo)cystinuria|cystine",
+    "miglustat": r"gaucher|niemann|glycogen storage disease type ii\b|pompe",
     "eliglustat": r"gaucher",
-    "sodium_phenylbutyrate": r"urea cycle|hyperammon|ornithine|citrullin|argininosuccin|carbamoyl",
-    "glycerol_phenylbutyrate": r"urea cycle|hyperammon|ornithine|citrullin|argininosuccin|carbamoyl",
-    "betaine_anhydrous": r"homocystin",
-    "cholic_acid": r"bile acid|peroxisom|zellweger",
+    "sodium_phenylbutyrate": r"urea cycle|hyperammon|ornithine|citrullin|argininosuccin|carbamoyl|arginase|argininaemia",
+    "glycerol_phenylbutyrate": r"urea cycle|hyperammon|ornithine|citrullin|argininosuccin|carbamoyl|arginase|argininaemia",
+    "betaine_anhydrous": r"homocystin|methylenetetrahydrofolate reductase|cystathionine beta-synthase",
+    # MedDRA codes Zellweger syndrome as "cerebrohepatorenal syndrome"; Refsum disease and adrenoleukodystrophy
+    # are peroxisomal disorders, covered by the labelled indication
+    "cholic_acid": r"bile acid|peroxisom|zellweger|cerebrohepatorenal|refsum|adrenoleukodystrophy",
     "example_nefecon": r"iga nephropathy|iga glomerulo|berger",
 }
 
