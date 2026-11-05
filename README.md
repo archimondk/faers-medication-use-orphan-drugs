@@ -1,6 +1,6 @@
 # Medication-use and adherence events for oral orphan drugs in FAERS
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23956484.svg)](https://doi.org/10.5281/zenodo.23956484)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23968181.svg)](https://doi.org/10.5281/zenodo.23968181)
 
 Analysis code for a disproportionality study of medication-use, dosing-administration and
 adherence-related events reported for oral orphan drugs in the US Food and Drug Administration
@@ -130,7 +130,7 @@ the script header):
 
 If you use this code, cite the archived release:
 
-> Xia Yuhang. *Medication-use and adherence events for oral orphan drugs in FAERS* (v1.0.0).
-> Zenodo; 2026. doi:10.5281/zenodo.23956484
+> Xia Yuhang. *Medication-use and adherence events for oral orphan drugs in FAERS* (v1.0.1).
+> Zenodo; 2026. doi:10.5281/zenodo.23968181
 
 The concept DOI 10.5281/zenodo.23956483 always resolves to the most recent version.
