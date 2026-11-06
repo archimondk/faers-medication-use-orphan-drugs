@@ -1,0 +1,13 @@
+{
+  "name": "c6_specialty2_vs_specialty1",
+  "description": "Direct comparison of the two specialty sets: the main second set takes the 'rare' role and the first set stays the specialty reference. In this run every 'rare' label means the second set; indication-restricted rows do not apply.",
+  "group_roles": {
+    "rare": "off"
+  },
+  "roles": {
+    "s2_enzalutamide": "rare",
+    "s2_apalutamide": "rare",
+    "s2_darolutamide": "rare",
+    "s2_abemaciclib": "rare"
+  }
+}

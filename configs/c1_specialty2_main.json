@@ -1,0 +1,13 @@
+{
+  "name": "c1_specialty2_main",
+  "description": "Rare-disease drugs against the main second specialty set (rules section 7, analyses 1-6).",
+  "group_roles": {
+    "specialty": "off"
+  },
+  "roles": {
+    "s2_enzalutamide": "specialty",
+    "s2_apalutamide": "specialty",
+    "s2_darolutamide": "specialty",
+    "s2_abemaciclib": "specialty"
+  }
+}

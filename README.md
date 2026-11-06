@@ -22,6 +22,9 @@ scripts/
   faers_me_feasibility_v7_singlepass.py  single-pass reference implementation of the same analysis
   meta_regression.py                     drug-level meta-regression (REML, Hartung–Knapp), Table 4
   make_figures.py                        Figure 1 and Figure S1
+  screen_comparator_counts.py            count-only screen of the second specialty set (DEMO and DRUG only)
+configs/                                 comparator configurations for --groups (version 1.1.0)
+docs/second_comparator_rules.md          prespecified rules and analysis plan for the second specialty set
 me_pt_dictionary_reviewed.csv            reviewed PT dictionary
 ```
 
@@ -97,6 +100,47 @@ python scripts/meta_regression.py --drug-level out/7_drug_level.csv --out out/me
     --loo-out out/meta_regression_HK_leave_one_out.csv
 python scripts/make_figures.py --results ./out --out ./figures
 ```
+
+Step 4 (version 1.1.0). Re-run the `agg` phase once for each comparator configuration in `configs/`.
+Each run writes the same numbered tables to its own folder, plus `config_used.json`, and Step 3 is then
+run on that folder. Without `--groups` the outputs are identical to version 1.0.2.
+
+```bash
+# the drug phase must be re-run once, because version 1.1.0 adds six candidate drugs;
+# the demo, reac and indi caches are reused
+rm -rf out/_work/drug5
+python scripts/faers_me_feasibility_v7_staged.py --faers-dir /path/to/faers_zips --out ./out \
+    --phase drug --start 2013Q1 --end 2025Q4
+for cfg in configs/c*.json; do
+  name=$(basename "$cfg" .json)
+  python scripts/faers_me_feasibility_v7_staged.py \
+    --faers-dir /path/to/faers_zips --out ./out_$name --work ./out/_work --phase agg \
+    --start 2013Q1 --end 2025Q4 \
+    --pt-dict me_pt_dictionary_reviewed.csv \
+    --smq-file narrow=smq/smq_20000224_narrow.txt \
+    --smq-file broad=smq/smq_20000224_broad.txt \
+    --groups "$cfg"
+  python scripts/meta_regression.py --drug-level out_$name/7_drug_level.csv \
+    --out out_$name/meta_regression_HK.csv --loo-out out_$name/meta_regression_HK_leave_one_out.csv
+done
+```
+
+The six candidates of the second set (`s2_*`, `s2c_*`) are inactive unless a configuration gives them a
+role. A configuration can set the role of each drug or of each original group (`rare`, `specialty`,
+`common`, `example` or `off`). It can also drop a drug's reports from a given FAERS quarter onward
+(`truncate_from`). The configurations follow section 7 of `docs/second_comparator_rules.md`:
+
+| File | Specialty reference | Purpose |
+|---|---|---|
+| `c1_specialty2_main.json` | enzalutamide, apalutamide, darolutamide, abemaciclib | Main second set (analyses 1–6) |
+| `c2_specialty2_with_cyclic.json` | main second set + palbociclib, ribociclib | Cyclic sensitivity set |
+| `c3_specialty_pooled.json` | first set + main second set (nine drugs) | Pooled specialty reference |
+| `c4_strict_nonorphan.json` | teriflunomide, tofacitinib + main second set | Sensitivity for C3 (no OOPD designation) |
+| `c5_specialty1_truncated.json` | first set, truncated at first US generic entry | Sensitivity for C5 |
+| `c6_specialty2_vs_specialty1.json` | first set, with the main second set in the `rare` role | Direct comparison of the two sets |
+
+In `c6`, every column or row labelled `rare` refers to the main second set, and the indication-restricted
+rows do not apply.
 
 `faers_me_feasibility_v7_singlepass.py` runs the same analysis in one pass and is kept for reference.
 On the full 52-quarter extract it needs far more memory than the staged script.

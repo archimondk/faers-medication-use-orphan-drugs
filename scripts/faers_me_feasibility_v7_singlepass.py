@@ -14,6 +14,10 @@ Usage:
         --pt-dict me_pt_dictionary_reviewed.csv \
         --smq-file narrow=smq/smq_20000224_narrow.txt --smq-file broad=smq/smq_20000224_broad.txt
 Options: --start/--end (e.g. 2013Q1, 2025Q4), --min-drug-n (default 100).
+Version 1.1.0: --groups FILE (agg phase) assigns each candidate drug a role (rare, specialty, common,
+example, off) and can drop a drug's reports from a given quarter onward; the files used for the paper are
+in configs/ (rules: docs/second_comparator_rules.md). Without --groups the six second-set candidates are
+off and every output is identical to version 1.0.2. With --groups, config_used.json is also written.
 
 Outputs (CSV, UTF-8 with BOM):
     0_data_summary.csv            quarter range, deleted-case records removed, reports after de-duplication
@@ -35,6 +39,7 @@ Outputs (CSV, UTF-8 with BOM):
                                   database and both comparator groups, 2021Q4-2023Q4
     12_multivariable_logistic.csv report-level logistic regression with drug-clustered robust SEs
     13_indication_top.csv         most frequent indication PTs per rare-disease drug
+    config_used.json              the --groups file and the roles it resolved to (only with --groups)
     forest_*.png                  per-drug forest plots (requires matplotlib)
 
 Definitions:
@@ -101,7 +106,58 @@ CANDIDATES = [
     ("ctrl_levothyroxine", r"LEVOTHYROXINE|SYNTHROID|EUTHYROX", None, "common", "comparator"),
     ("ctrl_metformin", r"\bMETFORMIN\b", r"SITAGLIPTIN|SAXAGLIPTIN|LINAGLIPTIN|EMPAGLIFLOZIN|DAPAGLIFLOZIN|CANAGLIFLOZIN|ALOGLIPTIN|ERTUGLIFLOZIN|PIOGLITAZONE|GLIPIZIDE|GLYBURIDE", "common", "comparator (single-ingredient only)"),
     ("ctrl_atorvastatin", r"ATORVASTATIN|LIPITOR", r"AMLODIPINE|EZETIMIBE", "common", "comparator (single-ingredient only)"),
+    # Second specialty-pharmacy comparator set (docs/second_comparator_rules.md). Inactive unless a --groups
+    # configuration gives them a role, so the default run reproduces version 1.0.2.
+    ("s2_enzalutamide", r"ENZALUTAMIDE|XTANDI", None, "inactive", "second set, main: AR inhibitor, continuous"),
+    ("s2_apalutamide", r"APALUTAMIDE|ERLEADA", None, "inactive", "second set, main: AR inhibitor, continuous"),
+    ("s2_darolutamide", r"DAROLUTAMIDE|NUBEQA", None, "inactive", "second set, main: AR inhibitor, continuous"),
+    ("s2_abemaciclib", r"ABEMACICLIB|VERZENIO", None, "inactive", "second set, main: CDK4/6 inhibitor, continuous"),
+    ("s2c_palbociclib", r"PALBOCICLIB|IBRANCE", None, "inactive", "second set, cyclic: CDK4/6 inhibitor, 21 days on / 7 off"),
+    ("s2c_ribociclib", r"RIBOCICLIB|KISQALI", None, "inactive", "second set, cyclic: CDK4/6 inhibitor, 21 days on / 7 off"),
 ]
+ROLES = ("rare", "specialty", "common", "example", "off")
+
+
+def load_groups_config(path):
+    """Role of every candidate, and optional truncation quarters, from a --groups JSON file.
+
+    Without a file every candidate keeps the group given in CANDIDATES and "inactive" entries are off,
+    which reproduces version 1.0.2. The file may contain
+        "name":           label written to config_used.json
+        "group_roles":    {original group: role}, applied first (e.g. {"rare": "off"})
+        "roles":          {candidate key: role}, applied second
+        "truncate_from":  {candidate key: "YYYYQn"}; reports from FAERS quarterly files of that quarter
+                          onward are dropped for that drug (e.g. from first US generic entry)
+    Roles are rare, specialty, common, example and off.
+    """
+    import json
+    orig = {k: g for k, _, _, g, _ in CANDIDATES}
+    roles = {k: ("off" if g == "inactive" else g) for k, g in orig.items()}
+    cfg = {}
+    if path:
+        with open(path, encoding="utf-8") as f:
+            cfg = json.load(f)
+        unknown = set(cfg) - {"name", "description", "group_roles", "roles", "truncate_from"}
+        if unknown:
+            sys.exit(f"--groups: unknown fields {sorted(unknown)}")
+        for g, r in cfg.get("group_roles", {}).items():
+            if g not in set(orig.values()) or r not in ROLES:
+                sys.exit(f"--groups: bad group_roles entry {g!r}: {r!r}")
+            for k in roles:
+                if orig[k] == g:
+                    roles[k] = r
+        for k, r in cfg.get("roles", {}).items():
+            if k not in roles or r not in ROLES:
+                sys.exit(f"--groups: bad roles entry {k!r}: {r!r}")
+            roles[k] = r
+    trunc = {}
+    for k, qs in cfg.get("truncate_from", {}).items():
+        if k not in roles:
+            sys.exit(f"--groups: unknown drug in truncate_from: {k!r}")
+        yy, q = parse_q(qs)
+        trunc[k] = yy * 10 + q
+    return roles, trunc, cfg
+
 
 # ----------------------------------------------------------------------------
 # 2. screening keywords (applied to the lower-cased PT); the analysis itself uses the reviewed dictionary (--pt-dict) and the SMQ lists
@@ -295,6 +351,8 @@ DISPLAY_NAME = {
     "betaine_anhydrous": "Betaine anhydrous", "sodium_phenylbutyrate": "Sodium phenylbutyrate",
     "glycerol_phenylbutyrate": "Glycerol phenylbutyrate", "carglumic_acid": "Carglumic acid",
     "cholic_acid": "Cholic acid", "spec_dimethyl_fumarate": "Dimethyl fumarate",
+    "s2_enzalutamide": "Enzalutamide", "s2_apalutamide": "Apalutamide", "s2_darolutamide": "Darolutamide",
+    "s2_abemaciclib": "Abemaciclib", "s2c_palbociclib": "Palbociclib", "s2c_ribociclib": "Ribociclib",
 }
 LABEL_EN = {"nonadherence": "Reports with dose omission / nonadherence PTs (%)",
             "any_me": "Reports with any medication-error / adherence / access PT (%)"}
@@ -373,6 +431,8 @@ def main():
                     help="PT list for the MedDRA SMQ 'Medication errors' (one PT per line, or a CSV with a pt column). Adds an SMQ outcome as a sensitivity analysis.")
     ap.add_argument("--pt-dict", default=None,
                     help="Reviewed PT dictionary CSV (columns pt, keep, category; only keep=Y rows are used). Coarse keywords are used if omitted.")
+    ap.add_argument("--groups", default=None,
+                    help="JSON file assigning comparator roles; see load_groups_config")
     args = ap.parse_args()
     start, end = parse_q(args.start), parse_q(args.end)
     os.makedirs(args.out, exist_ok=True)
@@ -541,9 +601,25 @@ def main():
         print("  no INDI file found; skipping the indication-restricted analysis")
 
     # ---------- aggregation ----------
+    roles, trunc, cfg = load_groups_config(args.groups)
+    orig_group = {k: g for k, _, _, g, _ in CANDIDATES}
     groups = {}
     for key, _, _, g, h in CANDIDATES:
-        groups[key] = (g, h, set(dh.loc[dh["drug"] == key, "primaryid"]))
+        if roles[key] == "off":
+            continue
+        ids = set(dh.loc[dh["drug"] == key, "primaryid"])
+        if key in trunc and ids:
+            fqs = demo["fq"].reindex(list(ids))
+            ids = set(fqs.index[fqs.notna() & (fqs < trunc[key])])
+        groups[key] = (roles[key], h, ids)
+    if args.groups:
+        import json
+        with open(os.path.join(args.out, "config_used.json"), "w", encoding="utf-8") as f:
+            json.dump({"file": os.path.abspath(args.groups), **cfg,
+                       "resolved_roles": {k: r for k, r in roles.items() if r != "off"},
+                       "n_reports_after_truncation": {k: int(len(v[2])) for k, v in groups.items()
+                                                      if k in trunc}}, f, indent=2)
+        print("groups: " + ", ".join(f"{r}={sum(1 for v in groups.values() if v[0] == r)}" for r in ROLES[:4]))
     rare_ids = set().union(*(v[2] for v in groups.values() if v[0] == "rare"))
     ctrl_ids = set().union(*(v[2] for v in groups.values() if v[0] == "common"))
     spec_ids = set().union(*(v[2] for v in groups.values() if v[0] == "specialty"))
@@ -612,7 +688,8 @@ def main():
     # ---------- sensitivity analysis: pooled rare-disease drugs vs the two comparator groups ----------
     # Leave-one-out and peak-year exclusion use only the parent entries; formulation sub-entries are subsets of them
     parents = [k for k, (g, h, ids) in groups.items()
-               if g == "rare" and not k.startswith("POOLED") and k in PARENT_RARE]
+               if g == "rare" and not k.startswith("POOLED")
+               and (k in PARENT_RARE or orig_group.get(k) != "rare")]
     hcp = HCP_CODES
     sens_cats = [c for c in ["nonadherence", "any_me", "dosing_admin_error", "storage_handling", "access_supply"]
                  + sorted(smq_sets) if c in flag_ids]

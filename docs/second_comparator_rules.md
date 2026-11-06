@@ -99,7 +99,17 @@ Consequences:
 
 **Generic entry in the first set**
 
-When US generics were first marketed for the existing specialty comparators is still to be recorded. Dimethyl fumarate (about 2020), fingolimod (about 2022) and teriflunomide (about 2023) are to be verified. These drugs do not meet C5 as written, and this is reported as a limitation of the first set (see section 7).
+Recorded 2026-11-06 from public sources, before any outcome data were produced for the configurations below. The sensitivity analysis drops each drug's reports from the FAERS quarterly file of the quarter with the earliest evidence of US generic marketing onward (configuration `configs/c5_specialty1_truncated.json`).
+
+| Drug | First US generic marketing | Reports dropped from | Source |
+|---|---|---|---|
+| Dimethyl fumarate | Mylan launch, 19 August 2020 | 2020Q3 | S19 |
+| Fingolimod | Generics notified 29 September 2022, confirmed launched by Novartis on 25 October 2022 | 2022Q3 | S20, S21 |
+| Teriflunomide | Sandoz and Accord launches confirmed 14 March 2023 | 2023Q1 | S22 |
+| Apremilast | None; generics barred until 2028 by patent ruling | Not truncated | S23 |
+| Tofacitinib | Generic tablets first marketed in May 2026, after the study period | Not truncated | S24 |
+
+Dimethyl fumarate, fingolimod and teriflunomide do not meet C5 as written. This is reported as a limitation of the first set (see section 7).
 
 ## 6. Count screen (no outcome data)
 
@@ -209,5 +219,11 @@ The primary quantity is the drug-level nonadherence OR for rare-disease drugs ve
 - S16. Pfizer. Ibrance personalized patient support (Pfizer Oncology Together). https://ibrance.pfizerpro.com/support-order/personalized-patient-support
 - S17. Novartis. Kisqali patient support. https://support.kisqali.com
 - S18. OptumRx. New generics: Zytiga, 27 November 2018. https://prod-prorx.optum.com/content/dam/optum3/professional-optumrx/news/rxnews/new-generics/newgenerics_zytiga_2018-1127.pdf
+- S19. Drug Topics. Mylan launches generic version of multiple sclerosis treatment. 20 August 2020. https://www.drugtopics.com/view/mylan-launches-generic-version-of-multiple-sclerosis-treatment
+- S20. OptumRx. New generics: Gilenya, 29 September 2022. https://professionals.optumrx.com/content/dam/optum3/professional-optumrx/news/rxnews/new-generics/newgenerics_gilenya_2022-0929.pdf
+- S21. Generics Bulletin. ANDA sponsors silent as Novartis confirms US Gilenya generic entries. 28 October 2022. https://insights.citeline.com/GB152254/ANDA-Sponsors-Silent-As-Novartis-Confirms-US-Gilenya-Generic-Entries
+- S22. Generics Bulletin. Sandoz, Accord confirm first US Aubagio generics as settlement day arrives. 14 March 2023. https://insights.citeline.com/GB152587/Sandoz-Accord-Confirm-First-US-Aubagio-Generics-As-Settlement-Day-Arrives
+- S23. Amgen. Amgen wins patent appeal on Otezla (apremilast). April 2023. https://www-ext.amgen.com/newsroom/press-releases/2023/04/amgen-wins-patent-appeal-on-otezla-apremilast
+- S24. Drugs.com. Generic Xeljanz availability. https://drugs.com/availability/generic-xeljanz.html
 - L1. Accredo Health Group (Express Scripts). Specialty drug list. 2025. https://hr.duke.edu/sites/default/files/Specialty-Drug-List-2026.pdf
 - L2. CVS Caremark. Advanced Control Specialty Formulary, April 2026. https://dhr.delaware.gov/benefits/cvs/documents/preferred-specialty-drug-list-040126.pdf

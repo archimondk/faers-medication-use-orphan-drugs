@@ -1,0 +1,9 @@
+{
+  "name": "c5_specialty1_truncated",
+  "description": "First set with reports dropped from the quarter of first US generic entry (sensitivity for C5). Dimethyl fumarate: Mylan launch 19 Aug 2020. Fingolimod: generics notified 29 Sep 2022, confirmed by Novartis 25 Oct 2022. Teriflunomide: generics launched by 14 Mar 2023. Apremilast and tofacitinib: no generic marketed before 2026.",
+  "truncate_from": {
+    "spec_dimethyl_fumarate": "2020Q3",
+    "spec_fingolimod": "2022Q3",
+    "spec_teriflunomide": "2023Q1"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "c4_strict_nonorphan",
+  "description": "Specialty drugs without any OOPD designation: teriflunomide, tofacitinib and the main second set (sensitivity for C3).",
+  "roles": {
+    "s2_enzalutamide": "specialty",
+    "s2_apalutamide": "specialty",
+    "s2_darolutamide": "specialty",
+    "s2_abemaciclib": "specialty",
+    "spec_dimethyl_fumarate": "off",
+    "spec_fingolimod": "off",
+    "spec_apremilast": "off"
+  }
+}

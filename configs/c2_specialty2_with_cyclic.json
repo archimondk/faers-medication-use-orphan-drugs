@@ -1,0 +1,15 @@
+{
+  "name": "c2_specialty2_with_cyclic",
+  "description": "Second set including the cyclic CDK4/6 inhibitors (sensitivity).",
+  "group_roles": {
+    "specialty": "off"
+  },
+  "roles": {
+    "s2_enzalutamide": "specialty",
+    "s2_apalutamide": "specialty",
+    "s2_darolutamide": "specialty",
+    "s2_abemaciclib": "specialty",
+    "s2c_palbociclib": "specialty",
+    "s2c_ribociclib": "specialty"
+  }
+}

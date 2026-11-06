@@ -1,0 +1,10 @@
+{
+  "name": "c3_specialty_pooled",
+  "description": "First set plus main second set as one specialty reference (nine drugs).",
+  "roles": {
+    "s2_enzalutamide": "specialty",
+    "s2_apalutamide": "specialty",
+    "s2_darolutamide": "specialty",
+    "s2_abemaciclib": "specialty"
+  }
+}

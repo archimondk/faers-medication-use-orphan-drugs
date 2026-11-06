@@ -13,6 +13,10 @@ The analysis runs in five phases that write intermediate arrays to <out>/_work a
         --pt-dict me_pt_dictionary_reviewed.csv \
         --smq-file narrow=smq/smq_20000224_narrow.txt --smq-file broad=smq/smq_20000224_broad.txt
 Options: --start/--end (e.g. 2013Q1, 2025Q4), --min-drug-n (default 100).
+Version 1.1.0: --groups FILE (agg phase) assigns each candidate drug a role (rare, specialty, common,
+example, off) and can drop a drug's reports from a given quarter onward; the files used for the paper are
+in configs/ (rules: docs/second_comparator_rules.md). Without --groups the six second-set candidates are
+off and every output is identical to version 1.0.2. With --groups, config_used.json is also written.
 
 Outputs (CSV, UTF-8 with BOM):
     0_data_summary.csv            quarter range, deleted-case records removed, reports after de-duplication
@@ -34,6 +38,7 @@ Outputs (CSV, UTF-8 with BOM):
                                   database and both comparator groups, 2021Q4-2023Q4
     12_multivariable_logistic.csv report-level logistic regression with drug-clustered robust SEs
     13_indication_top.csv         most frequent indication PTs per rare-disease drug
+    config_used.json              the --groups file and the roles it resolved to (only with --groups)
     forest_*.png                  per-drug forest plots (requires matplotlib)
 
 Definitions:
@@ -89,7 +94,57 @@ CANDIDATES = [
     ("ctrl_levothyroxine", r"LEVOTHYROXINE|SYNTHROID|EUTHYROX", None, "common", "comparator"),
     ("ctrl_metformin", r"\bMETFORMIN\b", r"SITAGLIPTIN|SAXAGLIPTIN|LINAGLIPTIN|EMPAGLIFLOZIN|DAPAGLIFLOZIN|CANAGLIFLOZIN|ALOGLIPTIN|ERTUGLIFLOZIN|PIOGLITAZONE|GLIPIZIDE|GLYBURIDE", "common", "comparator (single-ingredient only)"),
     ("ctrl_atorvastatin", r"ATORVASTATIN|LIPITOR", r"AMLODIPINE|EZETIMIBE", "common", "comparator (single-ingredient only)"),
+    # Second specialty-pharmacy comparator set (docs/second_comparator_rules.md). Inactive unless a --groups
+    # configuration gives them a role, so the default run reproduces version 1.0.2.
+    ("s2_enzalutamide", r"ENZALUTAMIDE|XTANDI", None, "inactive", "second set, main: AR inhibitor, continuous"),
+    ("s2_apalutamide", r"APALUTAMIDE|ERLEADA", None, "inactive", "second set, main: AR inhibitor, continuous"),
+    ("s2_darolutamide", r"DAROLUTAMIDE|NUBEQA", None, "inactive", "second set, main: AR inhibitor, continuous"),
+    ("s2_abemaciclib", r"ABEMACICLIB|VERZENIO", None, "inactive", "second set, main: CDK4/6 inhibitor, continuous"),
+    ("s2c_palbociclib", r"PALBOCICLIB|IBRANCE", None, "inactive", "second set, cyclic: CDK4/6 inhibitor, 21 days on / 7 off"),
+    ("s2c_ribociclib", r"RIBOCICLIB|KISQALI", None, "inactive", "second set, cyclic: CDK4/6 inhibitor, 21 days on / 7 off"),
 ]
+ROLES = ("rare", "specialty", "common", "example", "off")
+
+
+def load_groups_config(path):
+    """Role of every candidate, and optional truncation quarters, from a --groups JSON file.
+
+    Without a file every candidate keeps the group given in CANDIDATES and "inactive" entries are off,
+    which reproduces version 1.0.2. The file may contain
+        "name":           label written to config_used.json
+        "group_roles":    {original group: role}, applied first (e.g. {"rare": "off"})
+        "roles":          {candidate key: role}, applied second
+        "truncate_from":  {candidate key: "YYYYQn"}; reports from FAERS quarterly files of that quarter
+                          onward are dropped for that drug (e.g. from first US generic entry)
+    Roles are rare, specialty, common, example and off.
+    """
+    import json
+    orig = {k: g for k, _, _, g, _ in CANDIDATES}
+    roles = {k: ("off" if g == "inactive" else g) for k, g in orig.items()}
+    cfg = {}
+    if path:
+        with open(path, encoding="utf-8") as f:
+            cfg = json.load(f)
+        unknown = set(cfg) - {"name", "description", "group_roles", "roles", "truncate_from"}
+        if unknown:
+            sys.exit(f"--groups: unknown fields {sorted(unknown)}")
+        for g, r in cfg.get("group_roles", {}).items():
+            if g not in set(orig.values()) or r not in ROLES:
+                sys.exit(f"--groups: bad group_roles entry {g!r}: {r!r}")
+            for k in roles:
+                if orig[k] == g:
+                    roles[k] = r
+        for k, r in cfg.get("roles", {}).items():
+            if k not in roles or r not in ROLES:
+                sys.exit(f"--groups: bad roles entry {k!r}: {r!r}")
+            roles[k] = r
+    trunc = {}
+    for k, qs in cfg.get("truncate_from", {}).items():
+        if k not in roles:
+            sys.exit(f"--groups: unknown drug in truncate_from: {k!r}")
+        yy, q = parse_q(qs)
+        trunc[k] = yy * 10 + q
+    return roles, trunc, cfg
 
 CATEGORIES = {
     "storage_handling": r"product storage|incorrect (product )?storage|storage of drug|expired (product|drug)|temperature excursion",
@@ -319,6 +374,8 @@ DISPLAY_NAME = {
     "betaine_anhydrous": "Betaine anhydrous", "sodium_phenylbutyrate": "Sodium phenylbutyrate",
     "glycerol_phenylbutyrate": "Glycerol phenylbutyrate", "carglumic_acid": "Carglumic acid",
     "cholic_acid": "Cholic acid", "spec_dimethyl_fumarate": "Dimethyl fumarate",
+    "s2_enzalutamide": "Enzalutamide", "s2_apalutamide": "Apalutamide", "s2_darolutamide": "Darolutamide",
+    "s2_abemaciclib": "Abemaciclib", "s2c_palbociclib": "Palbociclib", "s2c_ribociclib": "Ribociclib",
 }
 LABEL_EN = {"nonadherence": "Reports with dose omission / nonadherence PTs (%)",
             "any_me": "Reports with any medication-error / adherence / access PT (%)"}
@@ -586,7 +643,7 @@ def phase_drug(files, quarters, work, **kw):
                 if m.any():
                     parts[j].append(ids2[m] * np.int64(4096) + (seq2[m].astype(np.int64) + 1))
         tmp = dst + ".part.npz"
-        payload = {}
+        payload = {"keys": np.array([k for k, _, _ in cand])}
         for j in range(len(cand)):
             payload[f"c{j}"] = np.unique(np.concatenate(parts[j])) if parts[j] else np.array([], np.int64)
         np.savez(tmp, **payload)
@@ -672,13 +729,20 @@ def _load_pt_dict(path):
 
 # ----------------------------------------------------------------------------
 def phase_agg(files, quarters, work, out, pt_dict=None, smq_files=None,
-              deleted_files=None, min_drug_n=100, **kw):
+              deleted_files=None, min_drug_n=100, groups_cfg=None, **kw):
     qs = [qkey(k) for k in quarters]
     d_dir, r_dir, g_dir, i_dir = (os.path.join(work, x) for x in ("demo5", "reac5", "drug5", "indi"))
     for nm, dd in (("DEMO", d_dir), ("REAC", r_dir), ("DRUG", g_dir)):
         miss = [q for q in qs if not os.path.exists(os.path.join(dd, q + ".npz"))]
         if miss:
             sys.exit(f"{nm} phase not complete; {len(miss)} quarters missing")
+    load_groups_config(groups_cfg)  # validate the --groups file before the long reads
+    want_keys = [k for k, _, _, _, _ in CANDIDATES]
+    for q in qs:
+        z = np.load(os.path.join(g_dir, q + ".npz"))
+        if "keys" not in z.files or [str(x) for x in z["keys"]] != want_keys:
+            sys.exit(f"the DRUG cache for {q} was built for a different candidate list (before version 1.1.0); "
+                     f"delete {g_dir} and re-run --phase drug")
 
     if pt_dict:
         pt_map = _load_pt_dict(pt_dict)
@@ -873,9 +937,25 @@ def phase_agg(files, quarters, work, out, pt_dict=None, smq_files=None,
         print("  no INDI file found; skipping the indication-restricted analysis", flush=True)
 
     # ---- aggregation ----
+    roles, trunc, cfg = load_groups_config(groups_cfg)
+    orig_group = {k: g for k, _, _, g, _ in CANDIDATES}
     groups = {}
     for j, (key, _, _, g, h) in enumerate(CANDIDATES):
-        groups[key] = (g, h, cand_ids[j])
+        if roles[key] == "off":
+            continue
+        ids = cand_ids[j]
+        if key in trunc and len(ids):
+            ids = ids[keep_fq[lookup(ids)[0]] < trunc[key]]
+        groups[key] = (roles[key], h, ids)
+    if groups_cfg:
+        import json
+        with open(os.path.join(out, "config_used.json"), "w", encoding="utf-8") as f:
+            json.dump({"file": os.path.abspath(groups_cfg), **cfg,
+                       "resolved_roles": {k: r for k, r in roles.items() if r != "off"},
+                       "n_reports_after_truncation": {k: int(len(v[2])) for k, v in groups.items()
+                                                      if k in trunc}}, f, indent=2)
+        print("groups: " + ", ".join(f"{r}={sum(1 for v in groups.values() if v[0] == r)}" for r in ROLES[:4]),
+              flush=True)
     rare_ids = np.unique(np.concatenate([v[2] for v in groups.values() if v[0] == "rare"]))
     ctrl_ids = np.unique(np.concatenate([v[2] for v in groups.values() if v[0] == "common"]))
     spec_ids = np.unique(np.concatenate([v[2] for v in groups.values() if v[0] == "specialty"]))
@@ -969,7 +1049,8 @@ def phase_agg(files, quarters, work, out, pt_dict=None, smq_files=None,
 
     # ---- sensitivity analyses ----
     parents = [k for k, (g, h, ids) in groups.items()
-               if g == "rare" and not k.startswith("POOLED") and k in PARENT_RARE]
+               if g == "rare" and not k.startswith("POOLED")
+               and (k in PARENT_RARE or orig_group.get(k) != "rare")]
     hcp = HCP_CODES
     sens_cats = [c for c in ["nonadherence", "any_me", "dosing_admin_error", "storage_handling",
                              "access_supply"] + sorted(smq_sets) if c in flag_arr]
@@ -1357,6 +1438,8 @@ def main():
     ap.add_argument("--min-drug-n", type=int, default=100)
     ap.add_argument("--start", default="2012Q4")
     ap.add_argument("--end", default="2099Q4")
+    ap.add_argument("--groups", default=None,
+                    help="JSON file assigning comparator roles (agg phase only); see load_groups_config")
     args = ap.parse_args()
     start, end = parse_q(args.start), parse_q(args.end)
     os.makedirs(args.out, exist_ok=True)
@@ -1372,7 +1455,7 @@ def main():
     {"demo": phase_demo, "reac": phase_reac, "drug": phase_drug,
      "indi": phase_indi, "agg": phase_agg}[args.phase](
         files, quarters, work, out=args.out, pt_dict=args.pt_dict, smq_files=args.smq_file,
-        deleted_files=deleted_files, min_drug_n=args.min_drug_n)
+        deleted_files=deleted_files, min_drug_n=args.min_drug_n, groups_cfg=args.groups)
 
 
 if __name__ == "__main__":
