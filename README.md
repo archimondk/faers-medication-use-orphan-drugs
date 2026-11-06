@@ -93,7 +93,8 @@ How the script selects and cleans the data:
 Step 3. Run the meta-regression and draw the figures from the `agg` outputs:
 
 ```bash
-python scripts/meta_regression.py --drug-level out/7_drug_level.csv --out out/meta_regression_HK.csv
+python scripts/meta_regression.py --drug-level out/7_drug_level.csv --out out/meta_regression_HK.csv \
+    --loo-out out/meta_regression_HK_leave_one_out.csv
 python scripts/make_figures.py --results ./out --out ./figures
 ```
 

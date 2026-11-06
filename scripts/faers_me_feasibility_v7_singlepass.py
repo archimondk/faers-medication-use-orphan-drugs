@@ -61,6 +61,8 @@ import pandas as pd
 # ----------------------------------------------------------------------------
 # Health-professional occupation codes: the FDA documentation lists MD/PH/OT; HP and RN appear in the data but not in the current documentation, so they are treated as "other/unspecified health professional"
 HCP_CODES = {"MD", "PH", "OT", "HP", "RN"}
+# HP and RN occur in the data but are not defined in the FAERS documentation; a sensitivity analysis uses only these
+HCP_DOCUMENTED = {"MD", "PH", "OT"}
 
 CANDIDATES = [
     # key, regex, exclude_regex, group, handling
@@ -497,7 +499,7 @@ def main():
         for key, rx, ex, g, h in cand:
             m = s.str.contains(rx, regex=True)
             if ex is not None:
-                m &= ~s.str.contains(ex, regex=True)
+                m = m & ~s.str.contains(ex, regex=True)
             if m.any():
                 drug_hits.append(pd.DataFrame({"primaryid": df.loc[m, "primaryid"].values,
                                                "drug_seq": df.loc[m, "drug_seq"].astype(str).str.strip().values,
@@ -623,27 +625,40 @@ def main():
             return set(d.index[d["rept_cod"].fillna("").str.upper() != "PER"])
         if how == "HCP_only":
             return set(d.index[d["occp_cod"].fillna("").str.upper().isin(hcp)])
+        if how == "HCP_strict":
+            return set(d.index[d["occp_cod"].fillna("").str.upper().isin(HCP_DOCUMENTED)])
         if how == "EXP_and_HCP":
             m = (d["rept_cod"].fillna("").str.upper() == "EXP") & d["occp_cod"].fillna("").str.upper().isin(hcp)
             return set(d.index[m])
         raise ValueError(how)
 
     # The year with the most nonadherence reports for each parent drug (used to drop clustering)
-    burst_ids = set()
-    if "nonadherence" in flag_ids:
-        for k in parents:
+    def peak_year_ids(keys):
+        out_ids = set()
+        if "nonadherence" not in flag_ids:
+            return out_ids
+        for k in keys:
             ids = groups[k][2]
             dd = demo.loc[list(ids)]
             na = dd[dd.index.isin(list(flag_ids["nonadherence"]))]
             if len(na):
-                top_year = na["year"].value_counts().idxmax()
-                burst_ids |= set(dd.index[dd["year"] == top_year])
+                vc = na["year"].value_counts()
+                top_year = vc[vc == vc.max()].index.min()   # ties: earliest year, as in the staged script
+                out_ids |= set(dd.index[dd["year"] == top_year])
+        return out_ids
+
+    burst_ids = peak_year_ids(parents)
+    burst_ref_ids = peak_year_ids([k for k, (g, h, ids) in groups.items()
+                                   if g in ("specialty", "common") and not k.startswith("POOLED")])
 
     scenarios = [("all", "all reports", rare_ids),
                  ("exclude_PER", "excluding periodic reports (PER)", rare_ids),
                  ("HCP_only", "health-professional reports only", rare_ids),
                  ("EXP_and_HCP", "expedited reports from health professionals only", rare_ids),
-                 ("all", "excluding the peak nonadherence year of each drug", rare_ids - burst_ids)]
+                 ("HCP_strict", "health-professional reports only, documented codes (MD, PH, OT)", rare_ids),
+                 ("all", "excluding the peak nonadherence year of each drug", rare_ids - burst_ids),
+                 ("all", "excluding the peak nonadherence year of every drug in all groups",
+                  rare_ids - burst_ids, burst_ref_ids)]
     restricted_ids = set().union(*(ind_ok.get(k, set()) for k in parents)) if ind_ok else set()
     if restricted_ids:
         scenarios.append(("all", "restricted to the rare-disease indication", restricted_ids))
@@ -651,12 +666,14 @@ def main():
         scenarios.append(("all", f"leave-one-out: removing {k}", rare_ids - groups[k][2]))
 
     sens_rows = []
-    for how, label, r_ids in scenarios:
+    for sc in scenarios:
+        how, label, r_ids = sc[:3]
+        ref_excl = sc[3] if len(sc) > 3 else set()
         rs = subset(r_ids, how)
         for ref_name, ref_ids in (("controls", ctrl_ids), ("specialty", spec_ids)):
             if not ref_ids:
                 continue
-            fs = subset(ref_ids, how)
+            fs = subset(ref_ids, how) - ref_excl
             for c in sens_cats:
                 a = len(rs & flag_ids[c]); n1 = len(rs)
                 c1 = len(fs & flag_ids[c]); n2 = len(fs)
@@ -684,15 +701,17 @@ def main():
     # ---------- worked example: a published dose-omission signal recomputed with different comparators ----------
     # Reproduce first on the original period (2021Q4-2023Q4) and PT (product dose omission issue), then switch comparators; then extend to the full period and the nonadherence composite
     pdoi_ids = set(hits.loc[hits["pt"].str.strip().str.lower() == "product dose omission issue", "primaryid"])
-    per_ids = set(demo.index[(demo["fq"] >= 214) & (demo["fq"] <= 234)])
-    all_ids_db = set(demo.index)
+    # every period restricts the example drug and all three references to the same quarters
+    ex_periods = (("2021Q4-2023Q4 (original study period)", set(demo.index[(demo["fq"] >= 214) & (demo["fq"] <= 234)])),
+                  ("2021Q4-2025Q4 (all quarters since approval)", set(demo.index[(demo["fq"] >= 214) & (demo["fq"] <= 254)])),
+                  ("2024Q1-2025Q4 (after the original study period)", set(demo.index[(demo["fq"] >= 241) & (demo["fq"] <= 254)])))
     ex_outcomes = [("PT: product dose omission issue", pdoi_ids)] + \
                   [(c, flag_ids[c]) for c in ("nonadherence", "any_me") if c in flag_ids]
     ex_rows = []
     for k, (g, h, ids) in groups.items():
         if g != "example" or not ids:
             continue
-        for period, pids in (("2021Q4-2023Q4 (original study period)", per_ids), ("full period", all_ids_db)):
+        for period, pids in ex_periods:
             for label, eids0 in (("all reports", ids), ("restricted to target indication", ind_ok.get(k, set()))):
                 eids = eids0 & pids
                 n1 = len(eids)

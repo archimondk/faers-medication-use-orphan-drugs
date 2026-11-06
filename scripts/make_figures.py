@@ -27,8 +27,10 @@ SCENARIOS = [
     (("all reports",), "All reports"),
     (("excluding periodic reports (PER)",), "Excluding periodic reports"),
     (("health-professional reports only",), "Health-professional reports"),
+    (("health-professional reports only, documented codes (MD, PH, OT)",), "Health-professional, documented codes"),
     (("expedited reports from health professionals only",), "Expedited health-professional reports"),
-    (("excluding the peak nonadherence year of each drug",), "Excluding each drug's peak year"),
+    (("excluding the peak nonadherence year of each drug",), "Excluding rare drugs' peak year"),
+    (("excluding the peak nonadherence year of every drug in all groups",), "Excluding every drug's peak year"),
     (("restricted to the rare-disease indication",), "Target indication only"),
 ]
 NAME = {
@@ -61,7 +63,8 @@ def figure1(summary, sens, path):
              "specialty": ("Specialty-pharmacy drugs", "#eb6834", "s")}
     offs = {"whole": 0.24, "controls": 0.0, "specialty": -0.24}
     scen = [(labels, en) for labels, en in SCENARIOS if sens.scenario.isin(labels).any()]
-    fig, axes = plt.subplots(1, 2, figsize=(9.6, 3.9), dpi=200, sharey=True)
+    height = max(3.9, 1.5 + 0.38 * len(scen))
+    fig, axes = plt.subplots(1, 2, figsize=(9.6, height), dpi=200, sharey=True)
     for ax, (cat, title) in zip(axes, [("nonadherence", "A  Nonadherence"), ("access_supply", "B  Access or supply problem")]):
         n = len(scen)
         for i, (labels, _) in enumerate(scen):
@@ -77,8 +80,8 @@ def figure1(summary, sens, path):
                 ax.plot(row.ROR, yy, marker=style[ref][2], ms=6, color=style[ref][1], mec="white", mew=1)
         ax.axvline(1, color=MUTED, lw=1, ls="--", zorder=0)
         ax.set_xscale("log")
-        ax.set_xlim(0.5, 50)
-        ax.set_xticks([0.5, 1, 2, 5, 10, 20, 50])
+        ax.set_xlim(0.5, 100)
+        ax.set_xticks([0.5, 1, 2, 5, 10, 20, 50, 100])
         ax.get_xaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
         ax.set_title(title, loc="left", fontsize=9.5, fontweight="bold", color=INK)
         ax.tick_params(axis="x", labelsize=8, colors=MUTED, length=0)
@@ -90,11 +93,11 @@ def figure1(summary, sens, path):
     axes[0].set_yticks(range(len(scen)))
     axes[0].set_yticklabels([en for _, en in scen][::-1], fontsize=8, color=INK)
     handles = [plt.Line2D([], [], marker=m, color=c, ls="", ms=6, mec="white") for _, c, m in style.values()]
-    fig.supxlabel("Reporting odds ratio, rare-disease drugs vs comparator (log scale)", fontsize=8, color=INK, x=0.62, y=0.13)
+    fig.supxlabel("Reporting odds ratio, rare-disease drugs vs comparator (log scale)", fontsize=8, color=INK, x=0.62, y=0.5 / height + 0.035)
     fig.legend(handles, [l for l, _, _ in style.values()], loc="lower center", ncol=3, frameon=False, fontsize=8,
                bbox_to_anchor=(0.6, 0.0))
     fig.text(0.01, 0.005, "Whole-database comparison shown for all reports only. Bars: 95% CI.", fontsize=6.5, color=MUTED)
-    fig.subplots_adjust(left=0.27, right=0.98, top=0.9, bottom=0.27, wspace=0.16)
+    fig.subplots_adjust(left=0.27, right=0.98, top=1 - 0.4 / height, bottom=1.05 / height, wspace=0.16)
     fig.savefig(path, facecolor="white")
     plt.close(fig)
 

@@ -105,6 +105,8 @@ ANY_ME = ["storage_handling", "nonadherence", "dosing_admin_error", "access_supp
 
 # Health-professional occupation codes: the FDA documentation lists MD/PH/OT; HP and RN appear in the data but not in the current documentation, so they are treated as "other/unspecified health professional"
 HCP_CODES = {"MD", "PH", "OT", "HP", "RN"}
+# HP and RN occur in the data but are not defined in the FAERS documentation; a sensitivity analysis uses only these
+HCP_DOCUMENTED = {"MD", "PH", "OT"}
 
 
 def load_smq_specs(specs):
@@ -580,7 +582,7 @@ def phase_drug(files, quarters, work, **kw):
             for j, (key, rx, ex) in enumerate(cand):
                 m = s2.str.contains(rx, regex=True).to_numpy()
                 if ex is not None:
-                    m &= ~s2.str.contains(ex, regex=True).to_numpy()
+                    m = m & ~s2.str.contains(ex, regex=True).to_numpy()
                 if m.any():
                     parts[j].append(ids2[m] * np.int64(4096) + (seq2[m].astype(np.int64) + 1))
         tmp = dst + ".part.npz"
@@ -982,16 +984,21 @@ def phase_agg(files, quarters, work, out, pt_dict=None, smq_files=None,
         if how == "HCP_only":
             keep = [maps["occp_cod"][0][c] for c in hcp if c in maps["occp_cod"][0]]
             return np.isin(occ_v, keep) if keep else np.zeros(len(ids), dtype=bool)
+        if how == "HCP_strict":
+            keep = [maps["occp_cod"][0][c] for c in HCP_DOCUMENTED if c in maps["occp_cod"][0]]
+            return np.isin(occ_v, keep) if keep else np.zeros(len(ids), dtype=bool)
         if how == "EXP_and_HCP":
             keep = [maps["occp_cod"][0][c] for c in hcp if c in maps["occp_cod"][0]]
             base = rep_v == maps["rept_cod"][0].get("EXP", -1)
             return base & (np.isin(occ_v, keep) if keep else np.zeros(len(ids), dtype=bool))
         raise ValueError(how)
 
-    burst_ids = np.array([], dtype=np.int64)
-    if "nonadherence" in flag_arr and parents:
+    def peak_year_ids(keys):
+        """Reports from the calendar year with the most nonadherence reports, for each drug in keys."""
+        if "nonadherence" not in flag_arr:
+            return np.array([], dtype=np.int64)
         parts = []
-        for k in parents:
+        for k in keys:
             ids = groups[k][2]
             is_na_f = in_flag(ids, flag_arr["nonadherence"])
             if not is_na_f.any():
@@ -1004,14 +1011,21 @@ def phase_agg(files, quarters, work, out, pt_dict=None, smq_files=None,
                 continue
             top = int(np.bincount(yn).argmax())
             parts.append(ids[yv == top])
-        if parts:
-            burst_ids = np.unique(np.concatenate(parts))
+        return np.unique(np.concatenate(parts)) if parts else np.array([], dtype=np.int64)
+
+    burst_ids = peak_year_ids(parents)
+    comparator_keys = [k for k, (g, h, ids) in groups.items()
+                       if g in ("specialty", "common") and not k.startswith("POOLED")]
+    burst_ref_ids = peak_year_ids(comparator_keys)
 
     scenarios = [("all", "all reports", rare_ids),
                  ("exclude_PER", "excluding periodic reports (PER)", rare_ids),
                  ("HCP_only", "health-professional reports only", rare_ids),
                  ("EXP_and_HCP", "expedited reports from health professionals only", rare_ids),
-                 ("all", "excluding the peak nonadherence year of each drug", np.setdiff1d(rare_ids, burst_ids))]
+                 ("HCP_strict", "health-professional reports only, documented codes (MD, PH, OT)", rare_ids),
+                 ("all", "excluding the peak nonadherence year of each drug", np.setdiff1d(rare_ids, burst_ids)),
+                 ("all", "excluding the peak nonadherence year of every drug in all groups",
+                  np.setdiff1d(rare_ids, burst_ids), burst_ref_ids)]
     restricted_ids = np.unique(np.concatenate([ind_ok[k] for k in parents if len(ind_ok.get(k, []))])) \
         if any(len(ind_ok.get(k, [])) for k in parents) else np.array([], np.int64)
     if len(restricted_ids):
@@ -1020,12 +1034,16 @@ def phase_agg(files, quarters, work, out, pt_dict=None, smq_files=None,
         scenarios.append(("all", f"leave-one-out: removing {k}", np.setdiff1d(rare_ids, groups[k][2])))
 
     sens_rows = []
-    for how, label, r_ids in scenarios:
+    for sc in scenarios:
+        how, label, r_ids = sc[:3]
+        ref_excl = sc[3] if len(sc) > 3 else None
         rs = r_ids[subset_mask(r_ids, how)]
         for ref_name, ref_ids in (("controls", ctrl_ids), ("specialty", spec_ids)):
             if len(ref_ids) == 0:
                 continue
             fs = ref_ids[subset_mask(ref_ids, how)]
+            if ref_excl is not None:
+                fs = np.setdiff1d(fs, ref_excl)
             for c in sens_cats:
                 a = int(in_flag(rs, flag_arr[c]).sum()); n1 = int(len(rs))
                 c1 = int(in_flag(fs, flag_arr[c]).sum()); n2 = int(len(fs))
@@ -1054,14 +1072,17 @@ def phase_agg(files, quarters, work, out, pt_dict=None, smq_files=None,
     pdoi_code = next((c for p_, c in pt_code.items()
                       if p_.strip().lower() == "product dose omission issue"), None)
     pdoi_ids = hit_pid[hit_pt == pdoi_code] if pdoi_code is not None else np.array([], np.int64)
-    per_ids = keep_pid[(keep_fq >= 214) & (keep_fq <= 234)]
+    # every period restricts the example drug and all three references to the same quarters
+    ex_periods = (("2021Q4-2023Q4 (original study period)", keep_pid[(keep_fq >= 214) & (keep_fq <= 234)]),
+                  ("2021Q4-2025Q4 (all quarters since approval)", keep_pid[(keep_fq >= 214) & (keep_fq <= 254)]),
+                  ("2024Q1-2025Q4 (after the original study period)", keep_pid[(keep_fq >= 241) & (keep_fq <= 254)]))
     ex_outcomes = [("PT: product dose omission issue", pdoi_ids)] + \
                   [(c, flag_arr[c]) for c in ("nonadherence", "any_me") if c in flag_arr]
     ex_rows = []
     for k, (g, h, ids) in groups.items():
         if g != "example" or not len(ids):
             continue
-        for period, period_ids in (("2021Q4-2023Q4 (original study period)", per_ids), ("full period", keep_pid)):
+        for period, period_ids in ex_periods:
             for label, eids0 in (("all reports", ids),
                                  ("restricted to target indication", ind_ok.get(k, np.array([], np.int64)))):
                 eids = np.intersect1d(eids0, period_ids, assume_unique=True)

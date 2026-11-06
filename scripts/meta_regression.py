@@ -8,9 +8,13 @@ with a random effect for drug: restricted maximum likelihood (REML) estimate of 
 Hartung-Knapp adjusted standard errors (scaling factor truncated at 1), t distribution with k - p df.
 A 0.5 continuity correction is added to drugs with 0 events or 100% events.
 
+With --loo-out, the rare-vs-specialty and rare-vs-common contrasts are re-estimated with the same model
+after removing one drug at a time (every comparator drug and every rare-disease drug).
+
 Input:  7_drug_level.csv from faers_me_feasibility_v7_staged.py (agg phase)
 Usage:
-    python scripts/meta_regression.py --drug-level out/7_drug_level.csv --out out/meta_regression_HK.csv
+    python scripts/meta_regression.py --drug-level out/7_drug_level.csv --out out/meta_regression_HK.csv \
+        --loo-out out/meta_regression_HK_leave_one_out.csv
 """
 import argparse
 
@@ -50,11 +54,28 @@ def reml_metareg(y, v, X):
     return b, se, tcrit, pval, t2, k - p
 
 
+def contrasts(s):
+    """Rare-vs-specialty and rare-vs-common ORs for one outcome (rows of 7_drug_level.csv)."""
+    ev, n = s.events.values.astype(float), s.n_reports.values.astype(float)
+    corr = (ev == 0) | (ev == n)
+    a = np.where(corr, ev + 0.5, ev)
+    bb = np.where(corr, n - ev + 0.5, n - ev)
+    y, v = np.log(a / bb), 1 / a + 1 / bb
+    out = {}
+    for ref in ("specialty", "common"):
+        other = "common" if ref == "specialty" else "specialty"
+        X = np.column_stack([np.ones(len(s)), (s.group == "rare").astype(float), (s.group == other).astype(float)])
+        b, se, tc, pv, t2, df = reml_metareg(y, v, X)
+        out[ref] = (np.exp(b[1]), np.exp(b[1] - tc * se[1]), np.exp(b[1] + tc * se[1]), pv[1], t2, df)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--drug-level", required=True, help="7_drug_level.csv")
     ap.add_argument("--out", default="meta_regression_HK.csv")
     ap.add_argument("--min-n", type=int, default=100, help="minimum reports per drug (default 100)")
+    ap.add_argument("--loo-out", default=None, help="optional leave-one-drug-out table")
     args = ap.parse_args()
 
     d = pd.read_csv(args.drug_level)
@@ -80,6 +101,18 @@ def main():
                          "CI_low": gg.pct.min(), "CI_high": gg.pct.max(), "p": np.nan, "tau2": np.nan, "df": len(gg)})
     out = pd.DataFrame(rows)
     out.to_csv(args.out, index=False, encoding="utf-8-sig")
+    if args.loo_out:
+        loo = []
+        for c in [o for o in OUTCOMES if o in set(d.category)]:
+            s = d[d.category == c]
+            for drug in s.drug:
+                g = s.loc[s.drug == drug, "group"].iloc[0]
+                res = contrasts(s[s.drug != drug])
+                for ref, (orr, lo, hi, pv, t2, df) in res.items():
+                    loo.append({"category": c, "removed_drug": drug, "removed_group": g,
+                                "comparison": f"rare vs {ref}", "OR": orr, "CI_low": lo, "CI_high": hi,
+                                "p": pv, "tau2": t2, "df": df})
+        pd.DataFrame(loo).to_csv(args.loo_out, index=False, encoding="utf-8-sig")
     with pd.option_context("display.width", 200):
         print(out.round(3).to_string())
 
