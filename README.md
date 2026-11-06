@@ -1,6 +1,6 @@
 # Medication-use and adherence events for oral orphan drugs in FAERS
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23968181.svg)](https://doi.org/10.5281/zenodo.23968181)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23956483.svg)](https://doi.org/10.5281/zenodo.23956483)
 
 Analysis code for a disproportionality study of medication-use, dosing-administration and
 adherence-related events reported for oral orphan drugs in the US Food and Drug Administration
@@ -23,6 +23,7 @@ scripts/
   meta_regression.py                     drug-level meta-regression (REML, Hartung–Knapp), Table 4
   make_figures.py                        Figure 1 and Figure S1
   screen_comparator_counts.py            count-only screen of the second specialty set (DEMO and DRUG only)
+  summarise_configs.py                   cross-configuration summary of the specialty comparison (version 1.1.0)
 configs/                                 comparator configurations for --groups (version 1.1.0)
 docs/second_comparator_rules.md          prespecified rules and analysis plan for the second specialty set
 me_pt_dictionary_reviewed.csv            reviewed PT dictionary
@@ -142,6 +143,25 @@ role. A configuration can set the role of each drug or of each original group (`
 In `c6`, every column or row labelled `rare` refers to the main second set, and the indication-restricted
 rows do not apply.
 
+Step 5 (version 1.1.0). Summarise the configurations and draw Figure 1 with both specialty sets:
+
+```bash
+python scripts/summarise_configs.py --main ./out --config ./out_c1_* ./out_c2_* ./out_c3_* ./out_c4_* \
+    ./out_c5_* ./out_c6_* --out cross_config_summary.csv
+python scripts/make_figures.py --results ./out --out ./figures --second-specialty ./out_c1_specialty2_main
+```
+
+`cross_config_summary.csv` gives, for each configuration and outcome:
+
+- the report-level and drug-level (Hartung–Knapp) estimates against the specialty reference;
+- the ratio of the drug-level estimate to the main run's estimate for the same outcome, and whether it
+  lies in the prespecified range;
+- the drug-clustered logistic estimates, with normal-based intervals and intervals using t critical
+  values with (number of drug clusters − 1) degrees of freedom;
+- the range across report subsets.
+
+Without `--second-specialty`, `make_figures.py` draws Figure 1 exactly as in version 1.0.2.
+
 `faers_me_feasibility_v7_singlepass.py` runs the same analysis in one pass and is kept for reference.
 On the full 52-quarter extract it needs far more memory than the staged script.
 
@@ -175,7 +195,7 @@ the script header):
 
 If you use this code, cite the archived release:
 
-> Xia Yuhang. *Medication-use and adherence events for oral orphan drugs in FAERS* (v1.0.2).
-> Zenodo; 2026. doi:10.5281/zenodo.24011286
+> Xia Yuhang. *Medication-use and adherence events for oral orphan drugs in FAERS* (v1.1.0).
+> Zenodo; 2026. doi:10.5281/zenodo.23956483 (concept DOI; the version DOI is listed on the Zenodo record)
 
 The concept DOI 10.5281/zenodo.23956483 always resolves to the most recent version.

@@ -10,6 +10,9 @@ Inputs, all from the agg phase of faers_me_feasibility_v7_staged.py:
     4_yearly_by_drug.csv    yearly counts
 Usage:
     python scripts/make_figures.py --results ./out --out ./figures
+    python scripts/make_figures.py --results ./out --out ./figures --second-specialty ./out_c1_specialty2_main
+With --second-specialty (version 1.1.0), Figure 1 adds the estimates against the second specialty set,
+read from 6_sensitivity.csv of that run; without it the figure is drawn exactly as in version 1.0.2.
 """
 import argparse
 import os
@@ -56,14 +59,23 @@ def style_axis(ax):
     ax.set_axisbelow(True)
 
 
-def figure1(summary, sens, path):
+def figure1(summary, sens, path, sens2=None):
     pooled = summary[summary.drug == "POOLED_rare_all"].iloc[0]
     whole = {c: parse_ror(pooled.get(f"ROR_vs_allFAERS_{c}")) for c in ("nonadherence", "access_supply")}
     style = {"whole": ("Whole database", "#8a8a85", "D"), "controls": ("Common chronic-disease drugs", "#1baf7a", "^"),
              "specialty": ("Specialty-pharmacy drugs", "#eb6834", "s")}
     offs = {"whole": 0.24, "controls": 0.0, "specialty": -0.24}
+    sources = {"controls": sens, "specialty": sens}
+    if sens2 is not None:
+        style["specialty"] = ("Specialty-pharmacy drugs, first set", "#eb6834", "s")
+        style["specialty2"] = ("Specialty-pharmacy drugs, second set", "#7b4fc9", "v")
+        offs = {"whole": 0.3, "controls": 0.1, "specialty": -0.1, "specialty2": -0.3}
+        sources["specialty2"] = sens2
+    refs = [r for r in ("controls", "specialty", "specialty2") if r in sources]
     scen = [(labels, en) for labels, en in SCENARIOS if sens.scenario.isin(labels).any()]
-    height = max(3.9, 1.5 + 0.38 * len(scen))
+    if sens2 is not None:
+        scen = [(labels, en) for labels, en in scen if sens2.scenario.isin(labels).any()]
+    height = max(3.9, 1.5 + (0.38 if sens2 is None else 0.48) * len(scen))
     fig, axes = plt.subplots(1, 2, figsize=(9.6, height), dpi=200, sharey=True)
     for ax, (cat, title) in zip(axes, [("nonadherence", "A  Nonadherence"), ("access_supply", "B  Access or supply problem")]):
         n = len(scen)
@@ -73,8 +85,10 @@ def figure1(summary, sens, path):
                 r, lo, hi = whole[cat]
                 ax.plot([lo, hi], [y + offs["whole"]] * 2, color=style["whole"][1], lw=1.6)
                 ax.plot(r, y + offs["whole"], marker=style["whole"][2], ms=5.5, color=style["whole"][1], mec="white", mew=1)
-            for ref in ("controls", "specialty"):
-                row = sens[sens.scenario.isin(labels) & (sens.reference == ref) & (sens.category == cat)].iloc[0]
+            for ref in refs:
+                src = sources[ref]
+                row = src[src.scenario.isin(labels) & (src.reference == ref.replace("specialty2", "specialty"))
+                          & (src.category == cat)].iloc[0]
                 yy = y + offs[ref]
                 ax.plot([row.CI_low, row.CI_high], [yy, yy], color=style[ref][1], lw=1.6)
                 ax.plot(row.ROR, yy, marker=style[ref][2], ms=6, color=style[ref][1], mec="white", mew=1)
@@ -94,10 +108,11 @@ def figure1(summary, sens, path):
     axes[0].set_yticklabels([en for _, en in scen][::-1], fontsize=8, color=INK)
     handles = [plt.Line2D([], [], marker=m, color=c, ls="", ms=6, mec="white") for _, c, m in style.values()]
     fig.supxlabel("Reporting odds ratio, rare-disease drugs vs comparator (log scale)", fontsize=8, color=INK, x=0.62, y=0.5 / height + 0.035)
-    fig.legend(handles, [l for l, _, _ in style.values()], loc="lower center", ncol=3, frameon=False, fontsize=8,
-               bbox_to_anchor=(0.6, 0.0))
+    fig.legend(handles, [l for l, _, _ in style.values()], loc="lower center", ncol=3 if sens2 is None else 2,
+               frameon=False, fontsize=8, bbox_to_anchor=(0.6, 0.0))
     fig.text(0.01, 0.005, "Whole-database comparison shown for all reports only. Bars: 95% CI.", fontsize=6.5, color=MUTED)
-    fig.subplots_adjust(left=0.27, right=0.98, top=1 - 0.4 / height, bottom=1.05 / height, wspace=0.16)
+    fig.subplots_adjust(left=0.27, right=0.98, top=1 - 0.4 / height,
+                        bottom=(1.05 if sens2 is None else 1.3) / height, wspace=0.16)
     fig.savefig(path, facecolor="white")
     plt.close(fig)
 
@@ -140,10 +155,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--results", required=True, help="directory with the agg-phase CSV files")
     ap.add_argument("--out", default="figures")
+    ap.add_argument("--second-specialty", default=None,
+                    help="results folder of the run with configs/c1_specialty2_main.json (adds it to Figure 1)")
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
     rd = lambda f: pd.read_csv(os.path.join(args.results, f))
-    figure1(rd("1_summary_by_drug.csv"), rd("6_sensitivity.csv"), os.path.join(args.out, "Figure1_comparator_sensitivity.png"))
+    sens2 = pd.read_csv(os.path.join(args.second_specialty, "6_sensitivity.csv")) if args.second_specialty else None
+    figure1(rd("1_summary_by_drug.csv"), rd("6_sensitivity.csv"), os.path.join(args.out, "Figure1_comparator_sensitivity.png"),
+            sens2=sens2)
     figure_s1(rd("4_yearly_by_drug.csv"), rd("7_drug_level.csv"), os.path.join(args.out, "FigureS1_annual_nonadherence.png"))
     print(f"figures written to {args.out}")
 
