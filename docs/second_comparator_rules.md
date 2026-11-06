@@ -2,6 +2,8 @@
 
 Version 1.0, 2026-11-06. This file is committed to the repository before any outcome data are produced for the drugs below. Its commit time is the record that the rules were fixed in advance. Any later change is made in a new commit with the reason stated.
 
+Criterion C3 was worded after the FDA OOPD search in section 5. That search uses regulatory data only; no FAERS data of any kind had been produced for the candidate drugs when C3 was fixed.
+
 ## 1. Purpose
 
 The existing specialty comparator set contains five drugs: teriflunomide, dimethyl fumarate, fingolimod, apremilast and tofacitinib. All five treat multiple sclerosis or immune-mediated disease. A second channel-matched set from a different therapeutic area tests whether the rare-versus-specialty estimates depend on that disease area.
@@ -34,7 +36,7 @@ A drug in the candidate universe is included if it meets all of the following cr
 |---|---|---|
 | C1 | Listed on at least one of the two specialty drug lists already used for Table S1b (L1 Accredo/Express Scripts 2025, L2 CVS Caremark April 2026) | L1, L2 |
 | C2 | Oral and self-administered, for long-term use | US prescribing information |
-| C3 | No FDA orphan designation for any indication | FDA OOPD database (manual search, see section 5) |
+| C3 | The principal US indication is not orphan-designated. Designations for other indications are recorded but do not exclude the drug. These include unapproved indications, combination products and withdrawn designations. | FDA OOPD database [S0], manual search (section 5); review of CDK inhibitors [S8] |
 | C4 | No REMS with restricted distribution | US prescribing information, FDA REMS list |
 | C5 | No US generic marketed before 2025Q4, so the distribution channel did not shift to retail during the study period | Orange Book, ANDA approval letters, generic-availability listings |
 | C6 | US approval no later than 31 December 2020, giving at least five years of reports in the study period | Drugs@FDA |
@@ -47,12 +49,12 @@ A drug in the candidate universe is included if it meets all of the following cr
 
 | Drug (brand; manufacturer) | US approval | Regimen | C1 L1 / L2 | C3 orphan | C4 REMS | C5 generic | C8 programme | Assignment |
 |---|---|---|---|---|---|---|---|---|
-| Enzalutamide (Xtandi; Astellas, co-marketed by Pfizer) | Aug 2012 | 160 mg once daily, continuous | Yes / Yes | None found; OOPD to confirm | No | ANDAs approved 2021–2026, none marketed; Sandoz final approval 20 Apr 2026 [S1, S2] | Xtandi Support Solutions [S12] | Main set |
-| Apalutamide (Erleada; Janssen) | Feb 2018 | 240 mg once daily, continuous | Yes / Yes | None found; OOPD to confirm | No | Zydus generic approved 17 Mar 2025, not commercially available [S3] | Janssen CarePath [S13] | Main set |
-| Darolutamide (Nubeqa; Bayer) | Jul 2019 | 600 mg twice daily, continuous | Yes / Yes | None found; OOPD to confirm | No | None approved [S4] | Access Services by Bayer [S14] | Main set |
-| Abemaciclib (Verzenio; Lilly) | Sep 2017 | Twice daily, continuous | Yes / No | None found [S8]; OOPD to confirm | No | None approved [S5] | Lilly Oncology Support Center [S15] | Main set |
-| Palbociclib (Ibrance; Pfizer) | Feb 2015 | 125 mg once daily, 21 days on / 7 off | Yes / Yes | None found [S8]; OOPD to confirm | No | None approved [S6] | Pfizer Oncology Together [S16] | Cyclic sensitivity set |
-| Ribociclib (Kisqali; Novartis) | Mar 2017 | Once daily, 21 days on / 7 off | Yes / Yes | None found [S8]; OOPD to confirm | No | None approved [S7] | Kisqali patient support [S17] | Cyclic sensitivity set |
+| Enzalutamide (Xtandi; Astellas, co-marketed by Pfizer) | Aug 2012 | 160 mg once daily, continuous | Yes / Yes | None (OOPD) | No | ANDAs approved 2021–2026, none marketed; Sandoz final approval 20 Apr 2026 [S1, S2] | Xtandi Support Solutions [S12] | Main set |
+| Apalutamide (Erleada; Janssen) | Feb 2018 | 240 mg once daily, continuous | Yes / Yes | None (OOPD) | No | Zydus generic approved 17 Mar 2025, not commercially available [S3] | Janssen CarePath [S13] | Main set |
+| Darolutamide (Nubeqa; Bayer) | Jul 2019 | 600 mg twice daily, continuous | Yes / Yes | None (OOPD) | No | None approved [S4] | Access Services by Bayer [S14] | Main set |
+| Abemaciclib (Verzenio; Lilly) | Sep 2017 | Twice daily, continuous | Yes / No | None (OOPD) | No | None approved [S5] | Lilly Oncology Support Center [S15] | Main set |
+| Palbociclib (Ibrance; Pfizer) | Feb 2015 | 125 mg once daily, 21 days on / 7 off | Yes / Yes | Chordoma, 2020, for the combination afatinib + palbociclib; not approved (OOPD) | No | None approved [S6] | Pfizer Oncology Together [S16] | Cyclic sensitivity set |
+| Ribociclib (Kisqali; Novartis) | Mar 2017 | Once daily, 21 days on / 7 off | Yes / Yes | Neuroblastoma, 2022; not approved (OOPD) | No | None approved [S7] | Kisqali patient support [S17] | Cyclic sensitivity set |
 | Abiraterone (Zytiga, Yonsa; Janssen, Sun) | Apr 2011 | Once daily, continuous | Yes / generic only | — | No | US generics launched 23 Nov 2018 [S18] | — | Excluded (C5) |
 
 Notes:
@@ -61,11 +63,43 @@ Notes:
 - Pfizer markets palbociclib and co-markets enzalutamide, so no manufacturer has more than one drug in the main set.
 - The main set has four drugs from four manufacturers.
 
-## 5. Checks still to be completed before the analysis run
+## 5. Checks completed before the analysis run
 
-1. **OOPD.** Search https://www.accessdata.fda.gov/scripts/opdlisting/oopd/ by generic name for each of the six candidates. Record the search date and any designation found. A designation for any indication excludes the drug under C3. The secondary sources above found none, but OOPD has not been searched directly.
-2. **Consistency with the first set.** Run the same OOPD search for the five existing specialty comparators. This applies C3 identically to both sets.
-3. **Generic entry in the first set.** Record when US generics were first marketed for the existing specialty comparators. Dimethyl fumarate (about 2020), fingolimod (about 2022) and teriflunomide (about 2023) are to be verified. These drugs do not meet C5 as written, and this is reported as a limitation of the first set (see section 7).
+**FDA OOPD search**
+
+- Search details:
+  - Date: 2026-11-06.
+  - Searched by: Xia Yuhang.
+  - Environment: Windows 11, Chrome, Ego Lite 0.6.2.7.
+  - Database: https://www.accessdata.fda.gov/scripts/opdlisting/oopd/index.cfm.
+  - Settings: all designations, 1983-01-01 to 2026-11-06, condensed list.
+  - Method: each drug was searched by generic name and by brand name.
+- Record identifiers are the cfgridkey values of the OOPD detail pages, because the public pages do not show a designation number.
+
+| Set | Drug | Designations found (cfgridkey) | Status | Assessment under C3 |
+|---|---|---|---|---|
+| Second, main | Enzalutamide | None | — | Meets |
+| Second, main | Apalutamide | None | — | Meets |
+| Second, main | Darolutamide | None | — | Meets |
+| Second, main | Abemaciclib | None | — | Meets |
+| Second, cyclic | Palbociclib | Treatment of chordoma, 2020-11-12, combination "afatanib and palbociclib" (781420) | Designated | Meets; combination product, unapproved indication |
+| Second, cyclic | Ribociclib | Treatment of neuroblastoma, 2022-11-25 (912722) | Designated | Meets; unapproved indication |
+| First | Teriflunomide | None | — | Meets |
+| First | Dimethyl fumarate | Treatment of Friedreich's ataxia, 2013-09-11 (406713); MS in patients with flushing, fixed combination with aspirin 162 mg, 2018-09-27 (607917) | Designated | Meets; unapproved indication and combination product |
+| First | Fingolimod | Treatment of chronic inflammatory demyelinating polyneuropathy, 2010-04-30 (305910) | Withdrawn or revoked | Meets |
+| First | Apremilast | Treatment of Behçet's disease, 2013-01-17 (384812); pediatric ulcerative colitis, 2018-01-17 (622417) | Behçet's: designated and approved; pediatric UC: designated | Meets; principal indication psoriasis and psoriatic arthritis, but holds one approved orphan indication |
+| First | Tofacitinib | None | — | Meets |
+| Excluded (C5) | Abiraterone | None | — | Not applicable |
+
+Consequences:
+
+- A rule excluding any designation would have removed dimethyl fumarate, fingolimod and apremilast from the first set and palbociclib and ribociclib from the second. C3 is therefore defined on the principal indication. The stricter definition is kept as a sensitivity analysis (section 7).
+- Apremilast is the only comparator in either set with an approved orphan indication. Its influence is already examined by the leave-one-out analysis of the first set.
+- The description of the first set as "non-orphan" in the manuscript is replaced by a statement that its drugs are used mainly for common diseases and that three hold orphan designations for other indications.
+
+**Generic entry in the first set**
+
+When US generics were first marketed for the existing specialty comparators is still to be recorded. Dimethyl fumarate (about 2020), fingolimod (about 2022) and teriflunomide (about 2023) are to be verified. These drugs do not meet C5 as written, and this is reported as a limitation of the first set (see section 7).
 
 ## 6. Count screen (no outcome data)
 
@@ -80,6 +114,42 @@ Decisions allowed after the screen, and no others:
 - A drug with fewer than 100 primary-suspect reports in 2013Q1–2025Q4 is kept at report level but left out of drug-level analyses, the same threshold used for the rare-disease drugs.
 - Name patterns are corrected if S3 shows matches to unrelated products. The corrected patterns are committed before the analysis run.
 - No drug is excluded for its report mix or its volume.
+
+### Screen results (run 2026-11-06, 2013Q1–2025Q4)
+
+**Check against the main analysis.** The screen reproduced the report totals of Table 2 exactly, together with their consumer and periodic shares:
+
+- rare-disease group: 15,508 reports (62.0% consumer, 60.5% periodic);
+- first specialty set: 488,215 reports (49.7% consumer, 68.0% periodic);
+- common comparators: 174,358 reports (41.5% consumer, 23.3% periodic).
+
+**Volume.** Every candidate had at least 100 primary-suspect reports:
+
+| Drug | Reports | Share of the main second set |
+|---|---|---|
+| Enzalutamide | 47,286 | 63.2% |
+| Apalutamide | 9,142 | 12.2% |
+| Darolutamide | 3,059 | 4.1% |
+| Abemaciclib | 15,313 | 20.5% |
+| Palbociclib | 80,180 | cyclic set |
+| Ribociclib | 20,275 | cyclic set |
+
+**Name patterns.** The matched strings were the US brand and generic names, development codes (JNJ-56021927, ARN-509, LEE011, PD-0332991) and non-US brands (Verzenios, Ramiven, Palbace, Reampla, Etulsi, Kryxana, Valamor, Risarg). Every match carried the expected PROD_AI. Blinded trial entries were few: "BLINDED ENZALUTAMIDE" (74 reports), plus small numbers for palbociclib, ribociclib and abemaciclib. They are kept, as they are for every group in the main analysis. No report matched more than one screened drug. The patterns are unchanged.
+
+**Decisions.** No decision under this section was triggered. The rules and patterns are unchanged.
+
+**Report mix recorded before the outcome run.** These observations are recorded here so that they cannot be chosen after the results are known:
+
+| Group | Reports | Expedited % | Periodic % | Consumer % | Documented HCP % | HP/RN % | US % |
+|---|---|---|---|---|---|---|---|
+| Rare-disease | 15,508 | 37.4 | 60.5 | 62.0 | 25.8 | 8.3 | 81.7 |
+| First specialty set | 488,215 | 26.4 | 68.0 | 49.7 | 34.4 | 14.2 | 84.9 |
+| Second set, main | 74,800 | 49.1 | 42.2 | 63.5 | 28.1 | 6.1 | 73.3 |
+| Second set + cyclic | 175,255 | 45.4 | 43.7 | 52.7 | 31.9 | 12.9 | 71.3 |
+| Common | 174,358 | 71.3 | 23.3 | 41.5 | 37.9 | 10.3 | 42.8 |
+
+- The main second set has fewer periodic reports than the rare-disease group or the first set, and more expedited reports. A difference between the two specialty-set estimates may therefore partly reflect report type. The adjusted model and the subset excluding periodic reports, both already in the plan, are reported next to the crude estimate.
+- Enzalutamide provides 63% of the main second set. Of its reports, 74% were received in 2013–2018, followed by a sharp fall. The drug-level analysis, which is the primary comparison, and the leave-one-out analysis within the second set address its weight.
 
 ## 7. Analysis plan
 
@@ -106,6 +176,7 @@ Additional comparisons:
 - The pooled specialty reference (first set plus main second set, nine drugs), at report and drug level.
 - The cyclic sensitivity set (main second set plus palbociclib and ribociclib).
 - The first set truncated at the first US generic entry of each drug, as a sensitivity analysis for C5.
+- A strict non-orphan reference made up of the specialty drugs without any OOPD designation: teriflunomide, tofacitinib and the four drugs of the main second set. This is a sensitivity analysis for C3.
 
 The ambiguous-interruption category stays separate from nonadherence. This matters for oncology drugs, whose doses are often interrupted for toxicity.
 
@@ -126,6 +197,7 @@ The primary quantity is the drug-level nonadherence OR for rare-disease drugs ve
 - S5. Drugs.com. Generic Verzenio availability. https://Drugs.com/availability/generic-verzenio.html
 - S6. Drugs.com. Generic Ibrance availability. https://Drugs.com/availability/generic-ibrance.html
 - S7. Drugs.com. Generic Kisqali availability. https://drugs.com/availability/generic-kisqali.html
+- S0. FDA Office of Orphan Products Development. Orphan drug designations and approvals database, searched 2026-11-06. https://www.accessdata.fda.gov/scripts/opdlisting/oopd/index.cfm
 - S8. CDK inhibitors and FDA: approved and orphan. Cancers. 2024;16(8):1555. https://www.mdpi.com/2072-6694/16/8/1555
 - S9. Healio. FDA grants orphan drug designation to tucatinib for brain metastases. 2017. https://www.healio.com/news/hematology-oncology/20170613/fda-grants-orphan-drug-designation-to-tucatinib-for-brain-metastases
 - S10. OncLive. FDA grants neratinib orphan drug status for breast cancer with brain metastases. https://www.onclive.com/view/fda-grants-neratinib-orphan-drug-status-for-breast-cancer-with-brain-metastases
