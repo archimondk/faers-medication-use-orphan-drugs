@@ -131,7 +131,7 @@ the script header):
 
 If you use this code, cite the archived release:
 
-> Xia Yuhang. *Medication-use and adherence events for oral orphan drugs in FAERS* (v1.0.1).
-> Zenodo; 2026. doi:10.5281/zenodo.23968181
+> Xia Yuhang. *Medication-use and adherence events for oral orphan drugs in FAERS* (v1.0.2).
+> Zenodo; 2026. doi:10.5281/zenodo.24011286
 
 The concept DOI 10.5281/zenodo.23956483 always resolves to the most recent version.
