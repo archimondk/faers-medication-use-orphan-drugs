@@ -27,7 +27,6 @@ Outputs (CSV, UTF-8 with BOM) in --out:
 import argparse
 import importlib.util
 import os
-import pickle
 import re
 import sys
 from collections import Counter, defaultdict
@@ -59,30 +58,12 @@ UNION = re.compile("|".join(f"(?:{r})" for _, r, _, _, _ in SCREEN))
 HCP_DOC = sorted(staged.HCP_DOCUMENTED)
 
 
-def scan_drug(files, quarters, cache_dir=None):
-    """Primary-suspect report ids per screened drug, and matched name strings (by primaryid).
-
-    With cache_dir, each quarter's result is pickled to cache_dir/<quarter>.pkl and reused on
-    later runs, so a run over the full 52 quarters can be assembled from several shorter ones.
-    """
+def scan_drug(files, quarters):
+    """Primary-suspect report ids per screened drug, and matched name strings (by primaryid)."""
     comp = [(k, re.compile(r), re.compile(x) if x else None) for k, r, x, _, _ in SCREEN]
     ids = {k: [] for k, _, _ in comp}
     names = {k: [] for k, _, _ in comp}
     for i, q in enumerate(quarters, 1):
-        cache = os.path.join(cache_dir, staged.qkey(q) + ".pkl") if cache_dir else None
-        if cache and os.path.exists(cache):
-            with open(cache, "rb") as fh:
-                done = pickle.load(fh)
-            for k in ids:
-                if len(done["ids"].get(k, [])):
-                    ids[k].append(done["ids"][k])
-                if k in done["names"] and len(done["names"][k]):
-                    names[k].append(done["names"][k])
-            if i % 10 == 0 or i == len(quarters):
-                print(f"  DRUG {i}/{len(quarters)}", flush=True)
-            continue
-        q_ids = {k: [] for k, _, _ in comp}
-        q_names = {k: [] for k, _, _ in comp}
         for df in staged.iter_table(files[q]["DRUG"], ["primaryid", "role_cod", "drugname", "prod_ai"]):
             ps = (df["role_cod"].str.strip().str.upper() == "PS").to_numpy()
             if not ps.any():
@@ -104,20 +85,8 @@ def scan_drug(files, quarters, cache_dir=None):
                 if ex is not None:
                     m = m & ~s2.str.contains(ex, regex=True).to_numpy()
                 if m.any():
-                    q_ids[k].append(pid2[m])
-                    q_names[k].append(pd.DataFrame({"pid": pid2[m], "name": s2[m].to_numpy()}))
-        q_ids = {k: (np.unique(np.concatenate(v)) if v else np.array([], np.int64)) for k, v in q_ids.items()}
-        q_names = {k: (pd.concat(v, ignore_index=True) if v else pd.DataFrame(columns=["pid", "name"]))
-                   for k, v in q_names.items()}
-        if cache:
-            os.makedirs(cache_dir, exist_ok=True)
-            with open(cache, "wb") as fh:
-                pickle.dump({"ids": q_ids, "names": q_names}, fh)
-        for k in ids:
-            if len(q_ids[k]):
-                ids[k].append(q_ids[k])
-            if len(q_names[k]):
-                names[k].append(q_names[k])
+                    ids[k].append(pid2[m])
+                    names[k].append(pd.DataFrame({"pid": pid2[m], "name": s2[m].to_numpy()}))
         if i % 10 == 0 or i == len(quarters):
             print(f"  DRUG {i}/{len(quarters)}", flush=True)
     ids = {k: (np.unique(np.concatenate(v)) if v else np.array([], np.int64)) for k, v in ids.items()}
@@ -126,31 +95,27 @@ def scan_drug(files, quarters, cache_dir=None):
     return ids, names
 
 
-def load_dedup(work, quarters, deleted_files, wanted=None):
-    """De-duplicated DEMO records, as in phase_agg of the staged script.
-
-    Only the reports the screen needs are materialised. The string columns are read one
-    quarter at a time and kept for the wanted primaryids alone; holding the whole
-    de-duplicated database as Python strings needs several GB and does not fit in memory.
-    """
+def load_dedup(work, quarters, deleted_files):
+    """De-duplicated DEMO records, exactly as in phase_agg of the staged script."""
     d_dir = os.path.join(work, "demo5")
     qs = [staged.qkey(k) for k in quarters]
     keys = ["occp_cod", "rept_cod", "occr_country"]
-    pid, cid, fda, sizes = [], [], [], []
+    pid, cid, fda = [], [], []
+    acc = {c: [] for c in keys}
     for q in qs:
         z = np.load(os.path.join(d_dir, q + ".npz"))
         pid.append(z["pid"]); cid.append(z["cid"]); fda.append(z["fda"])
-        sizes.append(len(z["pid"]))
+        for c in keys:
+            acc[c].append(np.asarray(z[c + "_uniq"]).astype(str)[z[c + "_codes"]])
     pid = np.concatenate(pid); cid = np.concatenate(cid); fda = np.concatenate(fda)
-    offsets = np.concatenate(([0], np.cumsum(sizes)))
-    n_read = len(pid)
+    cols = {c: np.concatenate(acc[c]) for c in keys}
     deleted = staged.read_deleted_caseids(deleted_files or [])
     n_del = 0
-    keep = np.ones(n_read, dtype=bool)
     if deleted:
         keep = ~np.isin(cid, np.fromiter(deleted, dtype=np.int64, count=len(deleted)))
         n_del = int((~keep).sum())
         pid, cid, fda = pid[keep], cid[keep], fda[keep]
+        cols = {c: v[keep] for c, v in cols.items()}
     bits = max(32, int(pid.max()).bit_length())
     order = np.lexsort((fda.astype(np.int64) * np.int64(1 << bits) + pid, cid))
     sc = cid[order]
@@ -159,26 +124,12 @@ def load_dedup(work, quarters, deleted_files, wanted=None):
     idx = order[last]
     srt = np.argsort(pid[idx], kind="stable")
     idx = idx[srt]
-    n_dedup = len(idx)
-    # position of each surviving record in the concatenated per-quarter arrays
-    orig = np.flatnonzero(keep)[idx] if deleted else idx
-    sel = np.isin(pid[idx], wanted) if wanted is not None else np.ones(n_dedup, dtype=bool)
-    pid_s, fda_s, orig = pid[idx][sel], fda[idx][sel], orig[sel]
-    q_of = np.searchsorted(offsets, orig, side="right") - 1
-    local = orig - offsets[q_of]
-    cols = {c: np.empty(len(pid_s), dtype=object) for c in keys}
-    for qi in np.unique(q_of):
-        m = q_of == qi
-        z = np.load(os.path.join(d_dir, qs[qi] + ".npz"))
-        for c in keys:
-            arr = np.asarray(z[c + "_uniq"]).astype(str)[z[c + "_codes"]]
-            cols[c][m] = arr[local[m]]
-    out = pd.DataFrame({"pid": pid_s, "fda": fda_s})
+    out = pd.DataFrame({"pid": pid[idx], "fda": fda[idx]})
     for c in keys:
-        out[c] = cols[c]
+        out[c] = cols[c][idx]
     out["year"] = np.where(out["fda"] == staged.FAR_FUTURE, -1, out["fda"] // 10000).astype(int)
-    print(f"report rows read: {n_read:,}; deleted-case records removed: {n_del:,}; "
-          f"deduplicated reports: {n_dedup:,}", flush=True)
+    print(f"report rows read: {len(pid):,}; deleted-case records removed: {n_del:,}; "
+          f"deduplicated reports: {len(out):,}", flush=True)
     return out
 
 
@@ -217,8 +168,6 @@ def main():
     ap.add_argument("--faers-dir", required=True)
     ap.add_argument("--out", default="./screen")
     ap.add_argument("--work", default=None, help="work directory of an earlier staged run, to reuse demo5")
-    ap.add_argument("--scan-cache", default=None,
-                    help="directory for per-quarter DRUG scan results; existing quarters are reused")
     ap.add_argument("--start", default="2013Q1")
     ap.add_argument("--end", default="2025Q4")
     args = ap.parse_args()
@@ -235,10 +184,8 @@ def main():
           f"REAC and INDI are not read", flush=True)
 
     staged.phase_demo(files, quarters, work)          # skips quarters already in <work>/demo5
-    ids, names = scan_drug(files, quarters, args.scan_cache)
-    hits = [v for v in ids.values() if len(v)]
-    wanted = np.unique(np.concatenate(hits)) if hits else None
-    demo = load_dedup(work, quarters, deleted_files, wanted=wanted)
+    demo = load_dedup(work, quarters, deleted_files)
+    ids, names = scan_drug(files, quarters)
 
     rows, yrows, nrows = [], [], []
     kept = {}
