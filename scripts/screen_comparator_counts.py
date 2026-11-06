@@ -27,6 +27,7 @@ Outputs (CSV, UTF-8 with BOM) in --out:
 import argparse
 import importlib.util
 import os
+import pickle
 import re
 import sys
 from collections import Counter, defaultdict
@@ -58,12 +59,30 @@ UNION = re.compile("|".join(f"(?:{r})" for _, r, _, _, _ in SCREEN))
 HCP_DOC = sorted(staged.HCP_DOCUMENTED)
 
 
-def scan_drug(files, quarters):
-    """Primary-suspect report ids per screened drug, and matched name strings (by primaryid)."""
+def scan_drug(files, quarters, cache_dir=None):
+    """Primary-suspect report ids per screened drug, and matched name strings (by primaryid).
+
+    With cache_dir, each quarter's result is pickled to cache_dir/<quarter>.pkl and reused on
+    later runs, so a run over the full 52 quarters can be assembled from several shorter ones.
+    """
     comp = [(k, re.compile(r), re.compile(x) if x else None) for k, r, x, _, _ in SCREEN]
     ids = {k: [] for k, _, _ in comp}
     names = {k: [] for k, _, _ in comp}
     for i, q in enumerate(quarters, 1):
+        cache = os.path.join(cache_dir, staged.qkey(q) + ".pkl") if cache_dir else None
+        if cache and os.path.exists(cache):
+            with open(cache, "rb") as fh:
+                done = pickle.load(fh)
+            for k in ids:
+                if len(done["ids"].get(k, [])):
+                    ids[k].append(done["ids"][k])
+                if k in done["names"] and len(done["names"][k]):
+                    names[k].append(done["names"][k])
+            if i % 10 == 0 or i == len(quarters):
+                print(f"  DRUG {i}/{len(quarters)}", flush=True)
+            continue
+        q_ids = {k: [] for k, _, _ in comp}
+        q_names = {k: [] for k, _, _ in comp}
         for df in staged.iter_table(files[q]["DRUG"], ["primaryid", "role_cod", "drugname", "prod_ai"]):
             ps = (df["role_cod"].str.strip().str.upper() == "PS").to_numpy()
             if not ps.any():
@@ -85,8 +104,20 @@ def scan_drug(files, quarters):
                 if ex is not None:
                     m = m & ~s2.str.contains(ex, regex=True).to_numpy()
                 if m.any():
-                    ids[k].append(pid2[m])
-                    names[k].append(pd.DataFrame({"pid": pid2[m], "name": s2[m].to_numpy()}))
+                    q_ids[k].append(pid2[m])
+                    q_names[k].append(pd.DataFrame({"pid": pid2[m], "name": s2[m].to_numpy()}))
+        q_ids = {k: (np.unique(np.concatenate(v)) if v else np.array([], np.int64)) for k, v in q_ids.items()}
+        q_names = {k: (pd.concat(v, ignore_index=True) if v else pd.DataFrame(columns=["pid", "name"]))
+                   for k, v in q_names.items()}
+        if cache:
+            os.makedirs(cache_dir, exist_ok=True)
+            with open(cache, "wb") as fh:
+                pickle.dump({"ids": q_ids, "names": q_names}, fh)
+        for k in ids:
+            if len(q_ids[k]):
+                ids[k].append(q_ids[k])
+            if len(q_names[k]):
+                names[k].append(q_names[k])
         if i % 10 == 0 or i == len(quarters):
             print(f"  DRUG {i}/{len(quarters)}", flush=True)
     ids = {k: (np.unique(np.concatenate(v)) if v else np.array([], np.int64)) for k, v in ids.items()}
@@ -186,6 +217,8 @@ def main():
     ap.add_argument("--faers-dir", required=True)
     ap.add_argument("--out", default="./screen")
     ap.add_argument("--work", default=None, help="work directory of an earlier staged run, to reuse demo5")
+    ap.add_argument("--scan-cache", default=None,
+                    help="directory for per-quarter DRUG scan results; existing quarters are reused")
     ap.add_argument("--start", default="2013Q1")
     ap.add_argument("--end", default="2025Q4")
     args = ap.parse_args()
@@ -202,7 +235,7 @@ def main():
           f"REAC and INDI are not read", flush=True)
 
     staged.phase_demo(files, quarters, work)          # skips quarters already in <work>/demo5
-    ids, names = scan_drug(files, quarters)
+    ids, names = scan_drug(files, quarters, args.scan_cache)
     hits = [v for v in ids.values() if len(v)]
     wanted = np.unique(np.concatenate(hits)) if hits else None
     demo = load_dedup(work, quarters, deleted_files, wanted=wanted)
