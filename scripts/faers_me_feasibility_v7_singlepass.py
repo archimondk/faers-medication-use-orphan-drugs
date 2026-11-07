@@ -21,6 +21,8 @@ off and every output is identical to version 1.0.2. With --groups, config_used.j
 
 Outputs (CSV, UTF-8 with BOM):
     0_data_summary.csv            quarter range, deleted-case records removed, reports after de-duplication
+    14_flow_and_characteristics.csv  record counts at each step and, per group, sex, age, country, year of
+                                  receipt, report type and reporter (READUS-PV items 8a and 8b; version 1.1.1)
     1_summary_by_drug.csv         per drug: reports, events per outcome category, crude ROR (95% CI) against
                                   the whole database and both comparator groups, consumer-reported share
     2_pt_by_drug.csv              preferred terms counted for each drug, with SMQ annotation
@@ -68,6 +70,7 @@ import pandas as pd
 HCP_CODES = {"MD", "PH", "OT", "HP", "RN"}
 # HP and RN occur in the data but are not defined in the FAERS documentation; a sensitivity analysis uses only these
 HCP_DOCUMENTED = {"MD", "PH", "OT"}
+AGE_FACTORS = {"YR": 1.0, "DEC": 10.0, "MON": 1 / 12, "WK": 1 / 52, "DY": 1 / 365, "HR": 1 / 8760}
 
 CANDIDATES = [
     # key, regex, exclude_regex, group, handling
@@ -117,6 +120,34 @@ CANDIDATES = [
 ]
 ROLES = ("rare", "specialty", "common", "example", "off")
 
+
+
+def characteristic_rows(group, n_grp, sex, age_y, ctry, year, rept, occp):
+    """Rows of 14_flow_and_characteristics.csv for one group (READUS-PV item 8b).
+
+    sex, ctry, rept, occp: upper-case strings ("" when missing); age_y: years (NaN when missing);
+    year: year of FDA receipt (NaN when missing)."""
+    rows = []
+
+    def add(char, level, mask):
+        k = int(np.sum(mask))
+        rows.append({"section": "characteristics", "group": group, "characteristic": char, "level": level,
+                     "n": k, "pct": round(100 * k / n_grp, 1) if n_grp else np.nan})
+    add("sex", "female", sex == "F"); add("sex", "male", sex == "M"); add("sex", "missing or unknown", ~np.isin(sex, ["F", "M"]))
+    add("age", "<18 years", age_y < 18); add("age", "18-64 years", (age_y >= 18) & (age_y < 65))
+    add("age", ">=65 years", age_y >= 65); add("age", "missing", np.isnan(age_y))
+    add("country", "United States", ctry == "US"); add("country", "other", (ctry != "US") & (ctry != ""))
+    add("country", "missing", ctry == "")
+    add("year of FDA receipt", "<=2015", year <= 2015); add("year of FDA receipt", "2016-2018", (year >= 2016) & (year <= 2018))
+    add("year of FDA receipt", "2019-2021", (year >= 2019) & (year <= 2021)); add("year of FDA receipt", ">=2022", year >= 2022)
+    add("year of FDA receipt", "missing", np.isnan(year))
+    add("report type", "expedited (EXP)", rept == "EXP"); add("report type", "periodic (PER)", rept == "PER")
+    add("report type", "direct (DIR)", rept == "DIR"); add("report type", "other or missing", ~np.isin(rept, ["EXP", "PER", "DIR"]))
+    add("reporter", "consumer (CN)", occp == "CN")
+    add("reporter", "health professional, documented code (MD, PH, OT)", np.isin(occp, sorted(HCP_DOCUMENTED)))
+    add("reporter", "undocumented code (HP, RN)", np.isin(occp, ["HP", "RN"]))
+    add("reporter", "other or missing", ~np.isin(occp, ["CN", "HP", "RN"] + sorted(HCP_DOCUMENTED)))
+    return rows
 
 def load_groups_config(path):
     """Role of every candidate, and optional truncation quarters, from a --groups JSON file.
@@ -459,6 +490,7 @@ def main():
     demo["caseid"] = pd.to_numeric(demo["caseid"], errors="coerce")
     demo["fda_dt"] = pd.to_numeric(demo["fda_dt"], errors="coerce")
     demo = demo.dropna(subset=["primaryid", "caseid"])
+    n_read = len(demo)
     deleted = read_deleted_caseids(args.faers_dir)
     n_del = int(demo["caseid"].isin(deleted).sum()) if deleted else 0
     if deleted:
@@ -902,6 +934,37 @@ def main():
     out(pd.DataFrame([{"quarters": f"20{quarters[0][0]:02d}Q{quarters[0][1]}-20{quarters[-1][0]:02d}Q{quarters[-1][1]}",
                        "n_quarters": len(quarters), "deleted_caseids_listed": len(deleted),
                        "records_removed_as_deleted": n_del, "reports_after_dedup": n_total}]), "0_data_summary.csv")
+
+    # ---------- flow and report characteristics (READUS-PV items 8a and 8b) ----------
+    flow = [{"section": "flow", "group": "", "characteristic": c, "level": "", "n": v, "pct": np.nan}
+            for c, v in (("DEMO records read", n_read), ("records removed (FDA deleted-case lists)", n_del),
+                         ("reports after deduplication", n_total))]
+    role_ids = {"rare": groups["POOLED_rare_all"][2], "specialty": groups["POOLED_specialty"][2],
+                "common": groups["POOLED_controls"][2]}
+    ex_keys = [k for k, (g, h, ids) in groups.items() if g == "example"]
+    if ex_keys:
+        role_ids["example"] = set().union(*(groups[k][2] for k in ex_keys))
+    char_rows = []
+    for g_name, ids in role_ids.items():
+        drugs = [k for k, (g, h, x) in groups.items() if g == g_name and not k.startswith("POOLED")
+                 and (g_name != "rare" or k in parents)]
+        flow.append({"section": "flow", "group": g_name, "characteristic": "primary-suspect reports", "level": "",
+                     "n": len(ids), "pct": np.nan})
+        flow.append({"section": "flow", "group": g_name, "characteristic": "drugs", "level": "",
+                     "n": len(drugs), "pct": np.nan})
+        flow.append({"section": "flow", "group": g_name, "characteristic": f"drugs with at least {args.min_drug_n} reports",
+                     "level": "", "n": sum(1 for k in drugs if len(groups[k][2]) >= args.min_drug_n), "pct": np.nan})
+        if not ids:
+            continue
+        d = demo.loc[sorted(ids)]
+        up = lambda c: d[c].fillna("").astype(str).str.strip().str.upper().to_numpy()
+        unit = up("age_cod")
+        fac = np.array([AGE_FACTORS.get(u, np.nan) for u in unit], dtype=float)
+        age_y = pd.to_numeric(d["age"], errors="coerce").to_numpy(dtype=float) * fac
+        year = d["year"].astype("float").to_numpy(dtype=float, na_value=np.nan)
+        char_rows += characteristic_rows(g_name, len(ids), up("sex"), age_y, up("occr_country"), year,
+                                         up("rept_cod"), up("occp_cod"))
+    out(pd.DataFrame(flow + char_rows), "14_flow_and_characteristics.csv")
 
     # ---------- per-drug analysis: drug-level random-effects pooling ----------
     # The per-drug analysis includes only drugs above the report threshold, so drugs with very few reports do not produce meaningless wide intervals

@@ -20,6 +20,8 @@ off and every output is identical to version 1.0.2. With --groups, config_used.j
 
 Outputs (CSV, UTF-8 with BOM):
     0_data_summary.csv            quarter range, deleted-case records removed, reports after de-duplication
+    14_flow_and_characteristics.csv  record counts at each step and, per group, sex, age, country, year of
+                                  receipt, report type and reporter (READUS-PV items 8a and 8b; version 1.1.1)
     1_summary_by_drug.csv         per drug: reports, events per outcome category, crude ROR (95% CI) against
                                   the whole database and both comparator groups, consumer-reported share
     2_pt_by_drug.csv              preferred terms counted for each drug, with SMQ annotation
@@ -162,7 +164,36 @@ ANY_ME = ["storage_handling", "nonadherence", "dosing_admin_error", "access_supp
 HCP_CODES = {"MD", "PH", "OT", "HP", "RN"}
 # HP and RN occur in the data but are not defined in the FAERS documentation; a sensitivity analysis uses only these
 HCP_DOCUMENTED = {"MD", "PH", "OT"}
+AGE_FACTORS = {"YR": 1.0, "DEC": 10.0, "MON": 1 / 12, "WK": 1 / 52, "DY": 1 / 365, "HR": 1 / 8760}
 
+
+
+def characteristic_rows(group, n_grp, sex, age_y, ctry, year, rept, occp):
+    """Rows of 14_flow_and_characteristics.csv for one group (READUS-PV item 8b).
+
+    sex, ctry, rept, occp: upper-case strings ("" when missing); age_y: years (NaN when missing);
+    year: year of FDA receipt (NaN when missing)."""
+    rows = []
+
+    def add(char, level, mask):
+        k = int(np.sum(mask))
+        rows.append({"section": "characteristics", "group": group, "characteristic": char, "level": level,
+                     "n": k, "pct": round(100 * k / n_grp, 1) if n_grp else np.nan})
+    add("sex", "female", sex == "F"); add("sex", "male", sex == "M"); add("sex", "missing or unknown", ~np.isin(sex, ["F", "M"]))
+    add("age", "<18 years", age_y < 18); add("age", "18-64 years", (age_y >= 18) & (age_y < 65))
+    add("age", ">=65 years", age_y >= 65); add("age", "missing", np.isnan(age_y))
+    add("country", "United States", ctry == "US"); add("country", "other", (ctry != "US") & (ctry != ""))
+    add("country", "missing", ctry == "")
+    add("year of FDA receipt", "<=2015", year <= 2015); add("year of FDA receipt", "2016-2018", (year >= 2016) & (year <= 2018))
+    add("year of FDA receipt", "2019-2021", (year >= 2019) & (year <= 2021)); add("year of FDA receipt", ">=2022", year >= 2022)
+    add("year of FDA receipt", "missing", np.isnan(year))
+    add("report type", "expedited (EXP)", rept == "EXP"); add("report type", "periodic (PER)", rept == "PER")
+    add("report type", "direct (DIR)", rept == "DIR"); add("report type", "other or missing", ~np.isin(rept, ["EXP", "PER", "DIR"]))
+    add("reporter", "consumer (CN)", occp == "CN")
+    add("reporter", "health professional, documented code (MD, PH, OT)", np.isin(occp, sorted(HCP_DOCUMENTED)))
+    add("reporter", "undocumented code (HP, RN)", np.isin(occp, ["HP", "RN"]))
+    add("reporter", "other or missing", ~np.isin(occp, ["CN", "HP", "RN"] + sorted(HCP_DOCUMENTED)))
+    return rows
 
 def load_smq_specs(specs):
     """--smq-file may be repeated as label=path; returns {smq_<label>: set(terms)}"""
@@ -786,6 +817,7 @@ def phase_agg(files, quarters, work, out, pt_dict=None, smq_files=None,
     sex = shrink(np.concatenate(acc["sex"])); acod = shrink(np.concatenate(acc["age_cod"]))
     ctry = shrink(np.concatenate(acc["occr_country"]))
     acc = None
+    n_read = len(pid)
     print(f"report rows read: {len(pid):,}", flush=True)
 
     # ---- deleted-case lists ----
@@ -1299,6 +1331,41 @@ def phase_agg(files, quarters, work, out, pt_dict=None, smq_files=None,
                           "n_quarters": len(quarters), "deleted_caseids_listed": len(deleted),
                           "records_removed_as_deleted": n_del, "reports_after_dedup": n_total}]),
            "0_data_summary.csv")
+
+    # ---- flow and report characteristics (READUS-PV items 8a and 8b) ----
+    def _decode(arr, mp_name):
+        lst = np.array([str(x).strip().upper() for x in maps[mp_name][1]] + [""])
+        a = np.asarray(arr).astype(np.int64)
+        return lst[np.where(a < 0, len(lst) - 1, a)]
+    flow = [{"section": "flow", "group": "", "characteristic": c, "level": "", "n": v, "pct": np.nan}
+            for c, v in (("DEMO records read", n_read), ("records removed (FDA deleted-case lists)", n_del),
+                         ("reports after deduplication", n_total))]
+    role_ids = {"rare": groups["POOLED_rare_all"][2], "specialty": groups["POOLED_specialty"][2],
+                "common": groups["POOLED_controls"][2]}
+    ex_keys = [k for k, (g, h, ids) in groups.items() if g == "example"]
+    if ex_keys:
+        role_ids["example"] = np.unique(np.concatenate([groups[k][2] for k in ex_keys]))
+    char_rows = []
+    for g_name, ids in role_ids.items():
+        drugs = [k for k, (g, h, x) in groups.items() if g == g_name and not k.startswith("POOLED")
+                 and (g_name != "rare" or k in parents)]
+        flow.append({"section": "flow", "group": g_name, "characteristic": "primary-suspect reports", "level": "",
+                     "n": len(ids), "pct": np.nan})
+        flow.append({"section": "flow", "group": g_name, "characteristic": "drugs", "level": "",
+                     "n": len(drugs), "pct": np.nan})
+        flow.append({"section": "flow", "group": g_name, "characteristic": f"drugs with at least {min_drug_n} reports",
+                     "level": "", "n": sum(1 for k in drugs if len(groups[k][2]) >= min_drug_n), "pct": np.nan})
+        if len(ids) == 0:
+            continue
+        pos, _ = lookup(ids)
+        unit = _decode(keep_acod[pos], "age_cod")
+        fac = np.array([AGE_FACTORS.get(u, np.nan) for u in unit], dtype=float)
+        age_y = keep_age[pos].astype(np.float64) * fac
+        year = np.where(keep_fda[pos] == FAR_FUTURE, np.nan, (keep_fda[pos] // 10000).astype(np.float64))
+        char_rows += characteristic_rows(g_name, len(ids), _decode(keep_sex[pos], "sex"), age_y,
+                                         _decode(keep_ctry[pos], "occr_country"), year,
+                                         _decode(keep_rep[pos], "rept_cod"), _decode(keep_occ[pos], "occp_cod"))
+    out_fn(pd.DataFrame(flow + char_rows), "14_flow_and_characteristics.csv")
 
     # ---- per-drug analyses ----
     min_n = min_drug_n

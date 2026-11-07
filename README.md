@@ -171,7 +171,7 @@ caseids, 112,832 records removed and 16,687,483 reports after de-duplication.
 
 ## Output
 
-The `agg` phase writes numbered CSV tables `0_data_summary.csv` to `13_indication_top.csv` (listed in
+The `agg` phase writes numbered CSV tables `0_data_summary.csv` to `14_flow_and_characteristics.csv` (listed in
 the script header):
 
 - data summary and per-drug counts;
@@ -181,6 +181,9 @@ the script header):
 - indication coverage;
 - the Nefecon worked example;
 - the report-level logistic regression with drug-clustered standard errors;
+- record counts at each processing step and the characteristics of each group's reports (sex, age,
+  country, year of receipt, report type, reporter), for the READUS-PV flow diagram and case description
+  (version 1.1.1; this table is new and leaves tables 0–13 unchanged);
 - per-drug forest plots.
 
 ## Data and licensing notes
@@ -195,7 +198,7 @@ the script header):
 
 If you use this code, cite the archived release:
 
-> Xia Yuhang. *Medication-use and adherence events for oral orphan drugs in FAERS* (v1.1.0).
+> Xia Yuhang. *Medication-use and adherence events for oral orphan drugs in FAERS* (v1.1.1).
 > Zenodo; 2026. doi:10.5281/zenodo.23956483 (concept DOI; the version DOI is listed on the Zenodo record)
 
 The concept DOI 10.5281/zenodo.23956483 always resolves to the most recent version.
