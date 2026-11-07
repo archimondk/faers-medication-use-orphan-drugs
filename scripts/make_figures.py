@@ -187,12 +187,13 @@ def figure_flow(flow, path, flow2=None):
     box(18, 88, 46, 9, ["FAERS quarterly ASCII files", f"{n_read:,} DEMO records"])
     arrow(41, 88, 41, 81.5)
     box(18, 71, 46, 10, ["After removal of deleted cases", f"{n_read - n_del:,} records"])
-    box(68, 80.75, 30, 7.5, [f"Removed: {n_del:,} records", "cases in FDA deleted-case lists"], fill="white", size=7.8)
+    box(68, 80.75, 31, 7.5, [f"Removed: {n_del:,} records", "of cases in FDA deleted-case lists"], fill="white", size=7.2)
     arrow(41, 84.5, 67.5, 84.5)
     arrow(41, 71, 41, 64.5)
     box(18, 54, 46, 10, ["After deduplication by CASEID", f"{n_dedup:,} reports"])
-    box(68, 63.75, 30, 7.5, [f"Removed: {n_read - n_del - n_dedup:,} earlier versions",
-                             "(latest FDA date, then highest PRIMARYID)"], fill="white", size=7.8)
+    box(68, 63.25, 31, 8.5, [f"Removed: {n_read - n_del - n_dedup:,} records",
+                             "earlier versions of the same case", "(latest version kept)"],
+        fill="white", size=7.2)
     arrow(41, 67.5, 67.5, 67.5)
     arrow(41, 54, 41, 47.5)
     box(10, 39.5, 62, 8, ["Primary-suspect attribution by generic and brand-name patterns"], size=8.3)
@@ -202,7 +203,7 @@ def figure_flow(flow, path, flow2=None):
         nd, nr = val_src(src, g, "drugs"), val_src(src, g, "primary-suspect reports")
         nk = val_src(src, g, minc)
         lines = [lab, f"{nd} drug{'s' if nd != 1 else ''}", f"{nr:,} reports", f"{nk} with \u2265{thr} reports"]
-        box(x, 12, w, 18, lines, size=7.6)
+        box(x, 12, w, 18, lines, size=7.0)
         arrow(41, 39.5, x + w / 2, 30.5)
     fig.savefig(path, bbox_inches="tight", facecolor="white")
     plt.close(fig)
