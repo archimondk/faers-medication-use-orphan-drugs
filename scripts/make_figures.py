@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Figure 1 (comparator choice across sensitivity analyses) and Figure S1 (annual nonadherence reports).
+Figure 1 (comparator choice across sensitivity analyses), the flow of FAERS records and the annual
+nonadherence reports by drug.
 
 Inputs, all from the agg phase of faers_me_feasibility_v7_staged.py:
     1_summary_by_drug.csv   whole-database ROR for the pooled rare-disease group
     6_sensitivity.csv       pooled ROR against each comparator group within report subsets
     7_drug_level.csv        which rare-disease drugs met the minimum report count
     4_yearly_by_drug.csv    yearly counts
+    14_flow_and_characteristics.csv  record counts for the flow diagram (version 1.1.1; skipped if absent)
 Usage:
     python scripts/make_figures.py --results ./out --out ./figures
     python scripts/make_figures.py --results ./out --out ./figures --second-specialty ./out_c1_specialty2_main
 With --second-specialty (version 1.1.0), Figure 1 adds the estimates against the second specialty set,
 read from 6_sensitivity.csv of that run; without it the figure is drawn exactly as in version 1.0.2.
+Version 1.1.1 adds the flow diagram (FigureS1_flow.png; the second-set box is drawn when
+--second-specialty is given) and writes the annual figure as FigureS2_annual_nonadherence.png,
+with the figure number removed from its title.
 """
 import argparse
 import os
@@ -142,13 +147,69 @@ def figure_s1(yearly, drug_level, path, first_year=2013, last_year=2025):
         ax.tick_params(labelbottom=True)
     for ax in axes[:, 0]:
         ax.set_ylabel("Reports", fontsize=7.5, color=MUTED)
-    fig.suptitle("Figure S1. Nonadherence reports per year, rare-disease drugs", x=0.02, ha="left", fontsize=10,
+    fig.suptitle("Nonadherence reports per year, rare-disease drugs", x=0.02, ha="left", fontsize=10,
                  color=INK, fontweight="bold")
     fig.text(0.02, 0.005, "Year of FDA receipt. Panels ordered by total nonadherence reports; y-axes differ between panels. "
              "Drugs with at least 100 reports.", fontsize=7, color=MUTED)
     fig.tight_layout(rect=(0, 0.02, 1, 0.97))
     fig.savefig(path, facecolor="white")
     plt.close(fig)
+
+
+def figure_flow(flow, path, flow2=None):
+    """Flow of FAERS records from the quarterly files to the analysed groups (READUS-PV item 8a)."""
+    from matplotlib.patches import FancyBboxPatch
+    f = flow[flow.section == "flow"]
+    val = lambda g, c: int(f[(f.group.fillna("") == g) & (f.characteristic == c)].n.iloc[0])
+    n_read, n_del, n_dedup = (val("", "DEMO records read"), val("", "records removed (FDA deleted-case lists)"),
+                              val("", "reports after deduplication"))
+    minc = [c for c in f.characteristic.unique() if c.startswith("drugs with at least")][0]
+    thr = minc.split()[-2]
+    groups = [("rare", "Rare-disease drugs", f), ("specialty", "First specialty set" if flow2 is not None else "Specialty-pharmacy drugs", f)]
+    if flow2 is not None:
+        f2 = flow2[flow2.section == "flow"]
+        groups.append(("specialty", "Second specialty set", f2))
+    groups += [("common", "Common comparators", f), ("example", "Nefecon (example)", f)]
+    INK, MUTED, LINE, FILL = "#222222", "#555555", "#9a9a9a", "#f4f4f2"
+    fig, ax = plt.subplots(figsize=(9.6, 7.4), dpi=200)
+    ax.set_xlim(0, 100); ax.set_ylim(0, 100); ax.axis("off")
+
+    def box(x, y, w, h, lines, fill=FILL, size=8.6):
+        ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.25,rounding_size=1.2", fc=fill, ec=LINE, lw=0.9))
+        y0 = y + h / 2 + (len(lines) - 1) * 1.275
+        for i, ln in enumerate(lines):
+            ax.text(x + w / 2, y0 - i * 2.55, ln, ha="center", va="center", fontsize=size,
+                    color=INK if i == 0 else MUTED, fontweight="bold" if i == 0 else "normal")
+
+    def arrow(x1, y1, x2, y2):
+        ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
+                    arrowprops=dict(arrowstyle="-|>", color=LINE, lw=1.0, shrinkA=0, shrinkB=0))
+    box(18, 88, 46, 9, ["FAERS quarterly ASCII files", f"{n_read:,} DEMO records"])
+    arrow(41, 88, 41, 81.5)
+    box(18, 71, 46, 10, ["After removal of deleted cases", f"{n_read - n_del:,} records"])
+    box(68, 80.75, 30, 7.5, [f"Removed: {n_del:,} records", "cases in FDA deleted-case lists"], fill="white", size=7.8)
+    arrow(41, 84.5, 67.5, 84.5)
+    arrow(41, 71, 41, 64.5)
+    box(18, 54, 46, 10, ["After deduplication by CASEID", f"{n_dedup:,} reports"])
+    box(68, 63.75, 30, 7.5, [f"Removed: {n_read - n_del - n_dedup:,} earlier versions",
+                             "(latest FDA date, then highest PRIMARYID)"], fill="white", size=7.8)
+    arrow(41, 67.5, 67.5, 67.5)
+    arrow(41, 54, 41, 47.5)
+    box(10, 39.5, 62, 8, ["Primary-suspect attribution by generic and brand-name patterns"], size=8.3)
+    w = 96 / len(groups) - 2
+    for i, (g, lab, src) in enumerate(groups):
+        x = 1 + i * (w + 2)
+        nd, nr = val_src(src, g, "drugs"), val_src(src, g, "primary-suspect reports")
+        nk = val_src(src, g, minc)
+        lines = [lab, f"{nd} drug{'s' if nd != 1 else ''}", f"{nr:,} reports", f"{nk} with \u2265{thr} reports"]
+        box(x, 12, w, 18, lines, size=7.6)
+        arrow(41, 39.5, x + w / 2, 30.5)
+    fig.savefig(path, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+
+
+def val_src(f, g, c):
+    return int(f[(f.group.fillna("") == g) & (f.characteristic == c)].n.iloc[0])
 
 
 def main():
@@ -163,7 +224,15 @@ def main():
     sens2 = pd.read_csv(os.path.join(args.second_specialty, "6_sensitivity.csv")) if args.second_specialty else None
     figure1(rd("1_summary_by_drug.csv"), rd("6_sensitivity.csv"), os.path.join(args.out, "Figure1_comparator_sensitivity.png"),
             sens2=sens2)
-    figure_s1(rd("4_yearly_by_drug.csv"), rd("7_drug_level.csv"), os.path.join(args.out, "FigureS1_annual_nonadherence.png"))
+    figure_s1(rd("4_yearly_by_drug.csv"), rd("7_drug_level.csv"), os.path.join(args.out, "FigureS2_annual_nonadherence.png"))
+    flow_path = os.path.join(args.results, "14_flow_and_characteristics.csv")
+    if os.path.exists(flow_path):
+        flow2 = None
+        if args.second_specialty and os.path.exists(os.path.join(args.second_specialty, "14_flow_and_characteristics.csv")):
+            flow2 = pd.read_csv(os.path.join(args.second_specialty, "14_flow_and_characteristics.csv"))
+        figure_flow(pd.read_csv(flow_path), os.path.join(args.out, "FigureS1_flow.png"), flow2=flow2)
+    else:
+        print("14_flow_and_characteristics.csv not found (results from before version 1.1.1); flow diagram skipped")
     print(f"figures written to {args.out}")
 
 

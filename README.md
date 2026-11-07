@@ -161,6 +161,8 @@ python scripts/make_figures.py --results ./out --out ./figures --second-specialt
 - the range across report subsets.
 
 Without `--second-specialty`, `make_figures.py` draws Figure 1 exactly as in version 1.0.2.
+From version 1.1.1 it also draws the flow of records (`FigureS1_flow.png`, from table 14; the second-set box
+is added with `--second-specialty`) and writes the annual figure as `FigureS2_annual_nonadherence.png`.
 
 `faers_me_feasibility_v7_singlepass.py` runs the same analysis in one pass and is kept for reference.
 On the full 52-quarter extract it needs far more memory than the staged script.
